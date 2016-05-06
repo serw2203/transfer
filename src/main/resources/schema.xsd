@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://transfer.ru/operation"
+           xmlns:trans="http://transfer.ru/operation">
+
+    <xs:element name="operation" nillable="true" type="trans:operation"/>
+
+    <xs:simpleType name="currency">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="RUB"/>
+            <xs:enumeration value="USD"/>
+            <xs:enumeration value="EUR"/>
+            <xs:enumeration value="GBP"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="operation">
+        <xs:sequence>
+            <xs:element minOccurs="1" maxOccurs="1" name="account" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation xml:lang="ru">№ счета учета</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element minOccurs="1" maxOccurs="1" name="amount" type="xs:decimal">
+                <xs:annotation>
+                    <xs:documentation>Количество</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element minOccurs="1" maxOccurs="1" name="currency" type="trans:currency">
+                <xs:annotation>
+                    <xs:documentation>Валюта</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element minOccurs="1" maxOccurs="1" name="transDate" type="xs:dateTime" nillable="true">
+                <xs:annotation>
+                    <xs:documentation>Дата оценки</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element minOccurs="1" maxOccurs="1" name="transDateTZ" type="xs:dateTime" nillable="true">
+                <xs:annotation>
+                    <xs:documentation>Дата окончания (гашения)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>
