@@ -24,7 +24,7 @@
 
     <xs:complexType name="client">
         <xs:sequence>
-            <xs:element name="clientId" type="xs:int"></xs:element>
+            <xs:element name="clientId" type="xs:integer"></xs:element>
             <xs:element name="lastName" type="xs:string"></xs:element>
             <xs:element minOccurs="0" maxOccurs="1" name="firstName" type="xs:string"></xs:element>
             <xs:element minOccurs="0" maxOccurs="1" name="middleName" type="xs:string"></xs:element>
@@ -34,8 +34,8 @@
 
     <xs:complexType name="account">
         <xs:sequence>
-            <xs:element name="accId" type="xs:int"></xs:element>
-            <xs:element name="clientId" type="xs:int"></xs:element>
+            <xs:element name="accId" type="xs:integer"></xs:element>
+            <xs:element name="clientId" type="xs:integer"></xs:element>
             <xs:element name="accNum" type="xs:string"></xs:element>
         </xs:sequence>
     </xs:complexType>

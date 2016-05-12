@@ -13,15 +13,6 @@
         </dependencySet>
     </dependencySets>
     <fileSets>
-        <!-- resource artifacts -->
-        <!--<fileSet>-->
-            <!--<directory>${project.build.directory}/classes</directory>-->
-            <!--<outputDirectory/> &lt;!&ndash; to the root &ndash;&gt;-->
-            <!--<includes>-->
-                <!--<include>*.properties</include>-->
-            <!--</includes>-->
-        <!--</fileSet>-->
-        <!-- build artifacts -->
         <fileSet>
             <directory>${project.build.directory}</directory>
             <outputDirectory/>

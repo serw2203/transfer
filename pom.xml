@@ -83,6 +83,7 @@
                             <xsdOptions>
                                 <xsdOption>
                                     <xsd>src/main/resources/schema.xsd</xsd>
+                                    <bindingFile>src/main/resources/binding.xjb</bindingFile>
                                     <packagename>ru.transfer.model</packagename>
                                     <extensionArgs>
                                         <extensionArg>-Xdv</extensionArg>

@@ -1,11 +1,10 @@
 /*
-drop table aaa_oper;
 drop table aaa_turn;
+drop table aaa_oper;
+drop table aaa_h_client;
 drop table aaa_rest;
 drop table aaa_account;
-drop table aaa_h_client;
 drop table aaa_client;
-drop table aaa_currency;
 drop table aaa_oper_type;
 drop table aaa_cross_rate;
 drop table aaa_currency;
@@ -69,6 +68,7 @@ begin
         last_name = 'CLI'|| reverse( left( reverse('00000' || :client_id ), 5 ));
         insert into aaa_h_client (h_client_id, client_id, last_name, first_name, middle_name, modify_date, cli_version)
         values (:h_client_id, :client_id, :last_name, 'FN1', 'MN1', getdate() -365 * 10, -2);
+
         h_client_id = h_client_id + 1;
 
         insert into aaa_h_client (h_client_id, client_id, last_name, first_name, middle_name, modify_date, cli_version)
@@ -114,27 +114,6 @@ select cur_code from (
   select 'SHF' as cur_code from dual
 );
 
-create table aaa_turn (
-    turn_id int not null,
-    acc_id int not null,
-    cur_code varchar(5) not null,
-    d_amount double precision default 0 not null,
-    k_amount double precision default 0 not null,
-    turn_date date not null
-);
-
-alter table aaa_turn add primary key (turn_id);
-
-alter table aaa_turn add constraint f_turn_on_acc_acc_id
-    foreign key (acc_id) references aaa_account (acc_id);
-
-alter table aaa_turn add constraint f_turn_on_curr_cur_code
-    foreign key (cur_code) references aaa_currency (cur_code);
-
-create index ix_oper_acc_cur on aaa_turn (acc_id, cur_code);
-
-create descending index ix_turn_date on aaa_turn (turn_date);
-
 create table aaa_oper_type (
    oper_type varchar(8) not null,
    oper_name varchar (128)
@@ -151,18 +130,14 @@ select oper_type, oper_name from (
 );
 
 create table aaa_oper (
+    oper_id int not null,
     h_client_id  int not null,
-    sturn_id int not null,
-    tturn_id int not null,
+    oper_date date not null,
     oper_type varchar(12) not null,
     comment varchar(255)
 );
 
-alter table aaa_oper add constraint f_oper_on_turn_sturn_id
-    foreign key (sturn_id) references aaa_turn (turn_id) on delete cascade;
-
-alter table aaa_oper add constraint f_oper_on_turn_tturn_id
-    foreign key (tturn_id) references aaa_turn (turn_id) on delete cascade;
+alter table aaa_oper add primary key (oper_id);
 
 alter table aaa_oper add constraint f_oper_on_oper_type_oper_type
     foreign key (oper_type) references aaa_oper_type (oper_type);
@@ -170,7 +145,33 @@ alter table aaa_oper add constraint f_oper_on_oper_type_oper_type
 alter table aaa_oper add constraint f_oper_on_h_client_h_client_id
     foreign key (h_client_id) references aaa_h_client (h_client_id);
 
-alter table aaa_oper add constraint un_sturn_tturn unique (sturn_id, tturn_id);
+create descending index ix_oper_date on aaa_oper (oper_date);
+
+
+create table aaa_turn (
+    turn_id int not null,
+    oper_id int not null,
+    acc_id int not null,
+    cur_code varchar(5) not null,
+    d_amount double precision default 0 not null,
+    k_amount double precision default 0 not null,
+    turn_date date not null
+);
+
+alter table aaa_turn add primary key (turn_id);
+
+alter table aaa_turn add constraint f_turn_on_acc_acc_id
+    foreign key (acc_id) references aaa_account (acc_id);
+
+alter table aaa_turn add constraint f_turn_on_curr_cur_code
+    foreign key (cur_code) references aaa_currency (cur_code);
+
+alter table aaa_turn add constraint f_turn_on_oper_oper_id
+    foreign key (oper_id) references aaa_oper (oper_id);
+
+create index ix_oper_acc_cur on aaa_turn (acc_id, cur_code);
+
+create descending index ix_turn_date on aaa_turn (turn_date);
 
 create table aaa_rest (
     acc_id int not null,
@@ -184,7 +185,7 @@ create unique index ix_rest_acc_cur on aaa_rest (acc_id, cur_code);
 create descending index ix_rest_modify_date on aaa_rest (modify_date);
 
 alter table aaa_rest add constraint f_rest_on_acc_acc_id
-    foreign key (acc_id) references aaa_account (acc_id) on delete cascade;
+    foreign key (acc_id) references aaa_account (acc_id);
 
 alter table aaa_rest add constraint f_rest_on_curr_cur_code
     foreign key (cur_code) references aaa_currency (cur_code);
@@ -223,7 +224,7 @@ create table aaa_cross_rate (
    scur_code varchar(5) not null,
    tcur_code varchar(5) not null,
    date_rate date not null,
-   rate double precision default -1 not null 
+   rate double precision default 0 not null
 );
 
 alter table aaa_cross_rate add constraint f_rate_on_scurr_cur_code
@@ -234,7 +235,7 @@ alter table aaa_cross_rate add constraint f_rate_on_tcurr_cur_code
 
 create descending index ix_rate_date on aaa_cross_rate (date_rate);
 
-insert into aaa_cross_rate
+insert into aaa_cross_rate (scur_code, tcur_code, date_rate, rate)
 select s.cur_code , t.cur_code, f_date(x.date_),
        f_round( s.ranq / t.ranq + 1/extract ( day from date_ ), 6)  from
 (select cur_code,
@@ -291,46 +292,48 @@ execute block as
 
     declare variable sturn_id int;
     declare variable tturn_id int;
-    declare variable date_ date;
+    declare variable date_ timestamp;
 
     declare variable h_client_id int;
 begin
-    sturn_id = 7;
-    tturn_id = 8;
+    sturn_id = coalesce((select max(turn_id) from aaa_turn), 0) + 1;
+    tturn_id = sturn_id + 1;
 
-    date_ = getdate();
-    in_amount = 100;
-    in_curr = 'USD';
-    in_acc_id = 0;
+    date_ = '06.04.2007 20:00:00';
+    --клиент принес 100 usd
+    out_amount = 10;
+    out_curr = 'HKD';
+    out_acc_id = 0;
 
-    out_curr = 'RUB';
-    out_acc_id = 50001;
+    --хочет положить в рублях
+    in_curr = 'EUR';
+    in_acc_id = 2;
 
     --количество рублей за доллар
-    select first 1 cr.rate * :in_amount from aaa_cross_rate cr
-    where cr.tcur_code = :in_curr and cr.scur_code = :out_curr and date_rate <= :date_
-    order by cr.date_rate desc into :out_amount;
+    select first 1 f_round( cr.rate * :out_amount , 2) from aaa_cross_rate cr
+    where cr.tcur_code = :out_curr and cr.scur_code = :in_curr and date_rate <= :date_
+    order by cr.date_rate desc into :in_amount;
 
-    if (out_amount is not null) then
+    if (in_amount is not null) then
     begin
         insert into aaa_turn (turn_id, acc_id, cur_code, d_amount, k_amount, turn_date)
-        values (:sturn_id, :in_acc_id, :in_curr, 0, :in_amount, :date_);
-        
+        values (:sturn_id, :out_acc_id, :out_curr, 0, :out_amount, :date_);
+
         insert into aaa_turn (turn_id, acc_id, cur_code, d_amount, k_amount, turn_date)
-        values (:tturn_id, :out_acc_id, :out_curr, :out_amount, 0, :date_);
-        
+        values (:tturn_id, :in_acc_id, :in_curr, :in_amount, 0, :date_);
+
         select hc.h_client_id from aaa_account a
         join aaa_h_client hc on hc.client_id = a.client_id and hc.cli_version = 0
         where a.acc_id = :in_acc_id into :h_client_id;
-        
-        insert into aaa_oper (h_client_id, sturn_id, tturn_id, oper_type)
-        values (:h_client_id, :sturn_id, :tturn_id, 'INPUT');
+
+        insert into aaa_oper (h_client_id, sturn_id, tturn_id, oper_date, oper_type)
+        values (:h_client_id, :sturn_id, :tturn_id, f_date (:date_), 'INPUT');
 
         merge into aaa_rest r using (
             select acc_id, cur_code, d_amount - k_amount as amount from aaa_turn
-            where turn_id in (:sturn_id, :tturn_id) ) t
+            where turn_id in (:sturn_id, :tturn_id) and acc_id != 0) t
         on (r.acc_id = t.acc_id and r.cur_code = t.cur_code)
-        when matched then update set amount = amount + t.amount, modify_date = :date_
+        when matched then update set amount = r.amount + t.amount, modify_date = :date_
         when not matched then insert values (t.acc_id, t.cur_code, t.amount, :date_);
     end
 end

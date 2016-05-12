@@ -6,6 +6,6 @@ import java.util.List;
 /**
  *
  */
-public interface Query<T> extends Execute {
+public interface DataQuery<T> extends UpdateQuery {
     List<T> handle (ResultSet resultSet) throws Exception;
 }

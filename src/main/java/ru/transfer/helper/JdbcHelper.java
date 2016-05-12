@@ -1,49 +1,23 @@
 package ru.transfer.helper;
 
-import ru.transfer.query.Execute;
-import ru.transfer.query.Query;
+import ru.transfer.query.BatchQuery;
+import ru.transfer.query.DataQuery;
+import ru.transfer.query.UpdateQuery;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.List;
 
 /**
  *
  */
 public class JdbcHelper<T> {
-    private Connection connection;
 
-    public JdbcHelper() {
-        try {
-            this.connection = ConnectionHelper.connection();
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    public Connection getConnection() {
-        return connection;
-    }
-
-    private void initStatement(PreparedStatement stmt, Execute handler) throws SQLException {
-        if (handler.getParams() != null) {
-            for (int i = 0; i < handler.getParams().length; i++) {
-                if (handler.getParams()[i] == null) {
-                    throw new IllegalArgumentException(String.format("Param with index %s must to be not null"));
-                }
-                stmt.setObject(i + 1, handler.getParams()[i]);
-            }
-        }
-    }
-
-    public List<T> executeQuery(Query handler) throws Exception {
+    public List<T> executeQuery(DataQuery<T> query) throws Exception {
         try (
-                PreparedStatement stmt = getConnection().prepareStatement(handler.sql())) {
-            initStatement(stmt, handler);
+                Connection connection = ConnectionHelper.connection();
+                PreparedStatement stmt = query.createPreparedStatement(connection);) {
             try (ResultSet resultSet = stmt.executeQuery()) {
-                return handler.handle(resultSet);
+                return query.handle(resultSet);
             } catch (SQLException e) {
                 throw new SQLException(e);
             }
@@ -52,11 +26,50 @@ public class JdbcHelper<T> {
         }
     }
 
-    public boolean execute(Execute handler) throws Exception {
+    public int executeUpdate(UpdateQuery query) throws Exception {
         try (
-                PreparedStatement stmt = getConnection().prepareStatement(handler.sql())) {
-            initStatement(stmt, handler);
-            return stmt.execute();
+                Connection connection = ConnectionHelper.connection();
+                PreparedStatement stmt = query.createPreparedStatement(connection);) {
+            return stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new SQLException(e);
+        }
+    }
+
+    public void executeUpdates(UpdateQuery[] queries) throws Exception {
+        try (
+                Connection connection = ConnectionHelper.connection();
+        ) {
+            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+            connection.setAutoCommit(false);
+            try {
+                for (UpdateQuery query : queries) {
+                    try (PreparedStatement stmt = query.createPreparedStatement(connection);) {
+                        if (query instanceof DataQuery) {
+                            ResultSet resultSet = stmt.executeQuery();
+                            ((DataQuery) query).handle(resultSet);
+                        } else {
+                            stmt.executeUpdate();
+                        }
+                    } catch (Exception e) {
+                        connection.rollback();
+                        throw new SQLException(e);
+                    }
+                }
+                connection.commit();
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (Exception e) {
+            throw new Exception(e);
+        }
+    }
+
+    public void executeBatch(BatchQuery query) throws Exception {
+        try (
+                Connection connection = ConnectionHelper.connection();
+                Statement stmt = query.createStatement(connection);) {
+            stmt.executeBatch();
         } catch (SQLException e) {
             throw new SQLException(e);
         }
