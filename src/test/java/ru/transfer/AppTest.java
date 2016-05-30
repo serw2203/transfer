@@ -61,7 +61,7 @@ public class AppTest {
 
         @Override
         public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
-            return CommonQuery.instance("select c1.cur_code as tcur_code, cur_code as scur_code from aaa_currency c1\n" +
+            return CommonQuery.instance("select c1.cur_code as tcur_code, c2.cur_code as scur_code from aaa_currency c1\n" +
                     "join aaa_currency c2 on c1.cur_code != c2.cur_code").createPreparedStatement(connection);
         }
     }
