@@ -3,9 +3,7 @@ package ru.transfer.service;
 import ru.transfer.dao.OperationDao;
 import ru.transfer.dao.OperationDaoImpl;
 import ru.transfer.helper.Jdbc;
-import ru.transfer.model.Account;
-import ru.transfer.model.Client;
-import ru.transfer.model.Rate;
+import ru.transfer.model.*;
 
 /**
  *
@@ -24,8 +22,24 @@ public class OperationServiceImpl implements OperationService {
         return operationDao.addAccount(new Jdbc(), account);
     }
 
-    @Override
-    public Rate addRate(Rate rate) throws Exception {
-        return operationDao.addRate(new Jdbc(), rate);
+    public Extracts addOpers (ComplexOper complexOper) throws Exception {
+        Extracts result = new Extracts();
+        Jdbc jdbc = new Jdbc();
+        jdbc.createTrans();
+        try {
+            for (Operation oper : complexOper.getOperations()) {
+                if (oper instanceof InputOperation) {
+                    result.getExtracts().add(operationDao.input(jdbc, (InputOperation) oper));
+                } else {
+                    throw new IllegalArgumentException("Unknown operation");
+                }
+            }
+            jdbc.commitTrans();
+            return result;
+        } catch (Exception e) {
+            jdbc.rollbackTrans();
+            e.printStackTrace();
+            throw e;
+        }
     }
 }

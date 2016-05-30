@@ -95,6 +95,12 @@
         </xs:sequence>
     </xs:complexType>
 
+    <xs:complexType name="extracts">
+        <xs:sequence>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="extracts" type="trans:extract"></xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
     <xs:complexType name="extract">
         <xs:sequence>
             <xs:element name="operId" type="xs:long"></xs:element>
@@ -131,6 +137,13 @@
     <xs:complexType name="inputOperation">
         <xs:complexContent>
             <xs:extension base="trans:operation">
+                <xs:sequence>
+                    <xs:element name="inputDate" type="xs:dateTime"></xs:element>
+                    <xs:element name="parishCurrency" type="xs:string"></xs:element>
+                    <xs:element name="parishAmount" type="xs:decimal"></xs:element>
+                    <xs:element name="inputCurrency" type="xs:string"></xs:element>
+                    <xs:element name="inputAccount" type="xs:string"></xs:element>
+                </xs:sequence>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

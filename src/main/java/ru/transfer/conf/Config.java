@@ -35,6 +35,9 @@ public class Config {
 
     public final static String SFMT = "yyyy-MM-dd'T'HH:mm:ssZ";
 
+    public final static String ACCOWNER = "ACCOWNER";
+    public final static String OWNER = "OWNER";
+
     private static class TimestampParamConverter implements ParamConverter<Timestamp> {
         @Override
         public Timestamp fromString(String string) {

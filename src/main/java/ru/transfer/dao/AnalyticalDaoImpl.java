@@ -141,8 +141,18 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
             rate.setDateRate(dateRate);
             rate.setRate(BigDecimal.ONE);
             return rate;
-        } else
-            return Utils.first(jdbc.executeQuery(new RateDataQuery().withParams(sCur, tCur, dateRate)));
+        } else {
+            List<Rate> list = jdbc.executeQuery(new RateDataQuery().withParams(sCur, tCur, dateRate));
+            if (list.isEmpty()) {
+                Rate rate = Utils.first( jdbc.executeQuery(new RateDataQuery().withParams(tCur, sCur, dateRate)) );
+                rate.setScurCode(sCur);
+                rate.setTcurCode(tCur);
+                rate.setRate( BigDecimal.ONE.divide(rate.getRate(), 8, BigDecimal.ROUND_HALF_UP) );
+                return rate;
+            } else
+                return Utils.first(list);
+        }
+
     }
 
     @Override
@@ -165,7 +175,7 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
         return result;
     }
 
-    /*REST*/
+    /*BALANCE*/
     private static class BalanceDataQuery implements DataQuery<Balance> {
         private Object[] params;
 
@@ -221,7 +231,7 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
         public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
             this.params = Utils.NNE(params);
             return CommonQuery.instance(
-                    "select o.oper_id, hc.client_id, hc.last_name, hc.first_name, hc.middle_name, o.oper_date, o.oper_type,\n" +
+                    "select o.oper_id, o.h_client_id, hc.client_id, hc.last_name, hc.first_name, hc.middle_name, o.oper_date, o.oper_type,\n" +
                             "       s.d_amount - s.k_amount as amount, sa.acc_id, sa.acc_num, s.cur_code, s.turn_date, o.rate,\n" +
                             "       t.d_amount - t.k_amount as cor_amount, ta.acc_id as cor_acc_id, ta.acc_num as cor_acc_num, t.cur_code as cor_cur_code,\n" +
                             "       t.turn_date as cor_turn_date\n" +
