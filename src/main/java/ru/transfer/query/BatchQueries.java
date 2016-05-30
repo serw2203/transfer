@@ -7,6 +7,6 @@ import java.sql.Statement;
 /**
  *
  */
-public interface BatchQuery {
-    Statement createStatement(Connection connection) throws SQLException;
+public interface BatchQueries {
+    Statement createStatement(Connection connection) throws Exception;
 }

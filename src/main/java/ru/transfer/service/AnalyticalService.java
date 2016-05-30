@@ -1,36 +1,26 @@
 package ru.transfer.service;
 
-import ru.transfer.dao.AnalyticalDao;
-import ru.transfer.dao.IAnalyticalDao;
-import ru.transfer.model.AccountRoot;
-import ru.transfer.model.Client;
-import ru.transfer.model.CurrencyRoot;
+import ru.transfer.model.*;
 
-import java.math.BigInteger;
+import java.sql.Timestamp;
 
 /**
  *
  */
-public class AnalyticalService implements IAnalyticalService {
+public interface AnalyticalService {
+    CurrencyRoot currencies() throws Exception;
 
-    private final IAnalyticalDao analyticalDao = new AnalyticalDao();
+    Client client(Long clientId) throws Exception;
 
-    @Override
-    public CurrencyRoot currencies() throws Exception {
-        CurrencyRoot root = new CurrencyRoot();
-        root.getCurrencies().addAll(this.analyticalDao.currencies());
-        return root;
-    }
+    AccountRoot accounts(Long clientId) throws Exception;
 
-    @Override
-    public Client client(BigInteger clientId) throws Exception {
-       return this.analyticalDao.client(clientId);
-    }
+    Account account (String accNum) throws Exception;
 
-    @Override
-    public AccountRoot accounts(BigInteger clientId) throws Exception {
-        AccountRoot root = new AccountRoot();
-        root.getAccounts().addAll(this.analyticalDao.accounts(clientId));
-        return root;
-    }
+    Rate rate (String sCur, String tCur, Timestamp dateRate) throws Exception;
+
+    RateRoot rates (Timestamp dateRate) throws Exception;
+
+    BalanceRoot balance (String accNum, Timestamp date) throws Exception;
+
+    ExtractRoot extracts (String accNum, Timestamp startDate, Timestamp stopDate) throws Exception;
 }

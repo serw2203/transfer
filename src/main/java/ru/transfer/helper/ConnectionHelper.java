@@ -4,7 +4,6 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import java.beans.PropertyVetoException;
 import java.sql.Connection;
-import java.sql.SQLException;
 
 /**
  *
@@ -16,7 +15,7 @@ public class ConnectionHelper {
         try {
             cpds = new ComboPooledDataSource();
             cpds.setDriverClass("org.h2.Driver");
-            cpds.setJdbcUrl("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;LOCK_MODE=3");
+            cpds.setJdbcUrl("jdbc:h2:mem:transfer;DB_CLOSE_DELAY=-1;LOCK_MODE=3");
             cpds.setMinPoolSize(10);
             cpds.setAcquireIncrement(2);
             cpds.setMaxPoolSize(100);
@@ -31,7 +30,12 @@ public class ConnectionHelper {
         }
     }
 
-    public static Connection connection() throws PropertyVetoException, SQLException {
+    /**
+     *
+     * @return
+     * @throws Exception
+     */
+    public static Connection connection() throws Exception {
         return cpds.getConnection();
     }
 }

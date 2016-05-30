@@ -1,8 +1,18 @@
-<jxb:bindings version="1.0"
-              xmlns:jxb="http://java.sun.com/xml/ns/jaxb"
-              xmlns:xs="http://www.w3.org/2001/XMLSchema"
-              jxb:extensionBindingPrefixes="xjc">
-    <jxb:globalBindings>
-        <jxb:javaType name="java.math.BigInteger" xmlType="xs:int"/>
-    </jxb:globalBindings>
-</jxb:bindings>
+<?xml version="1.0" encoding="UTF-8"?>
+<jaxb:bindings
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+        xmlns:jaxb="http://java.sun.com/xml/ns/jaxb"
+        xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+        xsd:schemaLocation="http://java.sun.com/xml/ns/jaxb http://java.sun.com/xml/ns/jaxb/bindingschema_2_0.xsd"
+        jaxb:extensionBindingPrefixes="xjc"
+        version="2.0">
+    <jaxb:globalBindings>
+        <jaxb:serializable />
+        <jaxb:javaType name="java.lang.Long" xmlType="xs:long"/>
+        <jaxb:javaType name="java.sql.Timestamp" xmlType="xsd:dateTime"
+                parseMethod="ru.transfer.util.Utils.dateTimeToTimestamp"
+                printMethod="ru.transfer.util.Utils.timestampToDateTime" />
+    </jaxb:globalBindings>
+</jaxb:bindings>
+
+
