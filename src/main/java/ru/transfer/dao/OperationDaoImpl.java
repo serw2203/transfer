@@ -99,7 +99,7 @@ public class OperationDaoImpl implements OperationDao {
                         debitAmount,
                         creditAccId,
                         creditCur,
-                        creditAmount}) < 1) throw new RuntimeException("Merge rests failed");
+                        creditAmount}) < 1) throw new RuntimeException("Merge balancess failed");
     }
 
     public Extract input(Jdbc jdbc, InputOperation operation) throws Exception {
