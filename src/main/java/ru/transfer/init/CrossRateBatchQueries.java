@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 /**
  *
@@ -40,7 +41,7 @@ public class CrossRateBatchQueries implements BatchQueries {
             "USD/CHF/0.9928"};
 
     @Override
-    public Statement createStatement(Connection connection) throws Exception {
+    public Statement createStatement (Connection connection) throws Exception {
         Statement statement = connection.createStatement();
         for (long i = YYYYMMDD.parse("2006-01-01").getTime(); i < System.currentTimeMillis(); i += STEP) {
             for (String row : RATEROWS) {

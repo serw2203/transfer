@@ -26,6 +26,14 @@ public class Jdbc {
         }
     }
 
+    private long start () {
+        return System.currentTimeMillis();
+    }
+
+    private void stop (long start) {
+        log.trace("Elapsed time - {} s <---", (System.currentTimeMillis() - start) / 1000.0);
+    }
+
     private Connection conn() throws Exception {
         return this.connection == null ? ConnectionHelper.connection() : null;
     }
@@ -105,6 +113,7 @@ public class Jdbc {
      * @throws Exception
      */
     public List<Map<String, ?>> executeQuery(String sql, Object[] params) throws Exception {
+        long st = start();
         try (
                 Connection conn = conn();
                 PreparedStatement stmt = stmt(conn, sql, params);
@@ -119,6 +128,7 @@ public class Jdbc {
                 }
                 result.add(row);
             }
+            stop(st);
             return result;
         } catch (Exception e) {
             throw e;
@@ -140,26 +150,13 @@ public class Jdbc {
      * @throws Exception
      */
     public <T> List<T> executeQuery(DataQuery<T> query) throws Exception {
+        long st = start();
         try (
                 Connection connection = conn();
                 PreparedStatement stmt = stmt(connection, query);
                 ResultSet resultSet = stmt.executeQuery()) {
+            stop(st);
             return query.handle(resultSet);
-        } catch (Exception e) {
-            throw e;
-        }
-    }
-
-    /**
-     * @param query
-     * @return
-     * @throws Exception
-     */
-    public int executeUpdate(UpdateQuery query) throws Exception {
-        try (
-                Connection connection = conn();
-                PreparedStatement stmt = stmt(connection, query)) {
-            return stmt.executeUpdate();
         } catch (Exception e) {
             throw e;
         }
@@ -172,10 +169,13 @@ public class Jdbc {
      * @throws Exception
      */
     public int executeUpdate(String sql, Object[] params) throws Exception {
+        long st = start();
         try (
                 Connection connection = conn();
                 PreparedStatement stmt = stmt(connection, sql, params)) {
-            return stmt.executeUpdate();
+            int result = stmt.executeUpdate();
+            stop(st);
+            return result;
         } catch (Exception e) {
             throw e;
         }

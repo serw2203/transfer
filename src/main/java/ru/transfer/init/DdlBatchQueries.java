@@ -5,6 +5,7 @@ import ru.transfer.query.BatchQueries;
 
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.List;
 
 /**
  *
@@ -141,7 +142,7 @@ public class DdlBatchQueries implements BatchQueries {
     };
 
     @Override
-    public Statement createStatement(Connection connection) throws Exception {
+    public Statement createStatement (Connection connection) throws Exception {
         Statement statement = connection.createStatement();
         for (String query : DDL_QUERIES) {
             statement.addBatch(query);

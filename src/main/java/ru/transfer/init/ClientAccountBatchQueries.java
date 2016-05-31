@@ -7,6 +7,7 @@ import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 /**
  *
@@ -40,7 +41,6 @@ public class ClientAccountBatchQueries implements BatchQueries {
     @Override
     public Statement createStatement(Connection connection) throws Exception {
         Statement statement = connection.createStatement();
-
         for (int i = 1; i < CLIENT_COUNT; i++) {
             statement.addBatch(String.format(INSERT_CLIENT, i));
             statement.addBatch(String.format(INSERT_H_CLIENT,

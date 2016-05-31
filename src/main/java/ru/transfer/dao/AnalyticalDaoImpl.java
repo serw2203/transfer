@@ -161,8 +161,8 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
         jdbc.createTrans();
         try {
             List<Map<String, ?>> rows = jdbc.executeQuery(
-                    "select s.cur_code as scur_code, " +
-                    "t.cur_code as tcur_code from aaa_currency s join aaa_currency t on s.cur_code != t.cur_code");
+                    "select s.cur_code as scur_code, t.cur_code as tcur_code from aaa_currency s " +
+                            "join aaa_currency t on s.cur_code != t.cur_code");
             for (Map<String, ?> row : rows) {
                 result.add(rate(jdbc, Utils.NNE(row.get("SCUR_CODE")), Utils.NNE(row.get("TCUR_CODE")), Utils.NNE(dateRate)));
             }

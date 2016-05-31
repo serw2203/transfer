@@ -22,6 +22,8 @@ public class ConnectionHelper {
             cpds.setMaxStatements(0);
             cpds.setNumHelperThreads(8);
             cpds.setAcquireRetryAttempts(50);
+            cpds.setMaxIdleTime(0);
+            cpds.setIdleConnectionTestPeriod(300);
             cpds.setTestConnectionOnCheckin(true);
             cpds.setTestConnectionOnCheckout(true);
             cpds.setPreferredTestQuery("select 1");

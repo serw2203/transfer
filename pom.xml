@@ -34,6 +34,9 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <fork>true</fork>
+                    <meminitial>2048m</meminitial>
+                    <maxmem>4096m</maxmem>
                 </configuration>
             </plugin>
 

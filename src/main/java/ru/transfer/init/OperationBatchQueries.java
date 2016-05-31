@@ -16,7 +16,7 @@ public class OperationBatchQueries implements BatchQueries {
     private static Logger logger = LoggerFactory.getLogger(OperationBatchQueries.class);
 
     private final static SimpleDateFormat YYYYMMDDHHMMSS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private final static int DAY_COUNT = 1;
+    private final static int DAY_COUNT = 10;
     private final static int STEP = 366;
 
     private final static String INSERT_OPER =
@@ -69,6 +69,7 @@ public class OperationBatchQueries implements BatchQueries {
             calendar.add(Calendar.HOUR_OF_DAY, 19 + 24 * STEP);
             logger.info("OPERATION & REST for {}, {} - prepared!", inputDate, outputDate);
         }
+
         statement.addBatch(SYNC_BALANCES_ALL);
         return statement;
     }

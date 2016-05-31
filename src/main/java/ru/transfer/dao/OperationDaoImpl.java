@@ -41,7 +41,7 @@ public class OperationDaoImpl implements OperationDao {
                         "hc.h_client_id, a.client_id, a.acc_id, ta.acc_id as cor_acc_id, hc.last_name, hc.first_name, hc.middle_name from aaa_account a\n" +
                         "join aaa_h_client hc on hc.client_id = a.client_id and a.acc_num = ?\n" +
                         "join aaa_account ta on ta.acc_num = ?\n" +
-                        "where hc.modify_date < ?\n" +
+                        "where hc.modify_date <= ?\n" +
                         "order by hc.modify_date desc", new Object[]{acc, corAcc, operDate}));
         Extract ext = new Extract();
         ext.setOperId(sequence(jdbc));

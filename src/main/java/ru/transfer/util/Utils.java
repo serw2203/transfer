@@ -118,9 +118,9 @@ public class Utils {
     }
 
     public static void traceSql(String sql, Object[] params) {
-        log.trace("\tSQL : --->\n\t{}\n", sql);
+        log.trace("\tSQL : --->\n\t{}", sql);
         if (params != null) {
-            log.trace("\tWITH PARAMS : ---> {}\n", arrayToString(params), sql);
+            log.trace("\tWITH PARAMS : {}", arrayToString(params), sql);
         }
     }
 }

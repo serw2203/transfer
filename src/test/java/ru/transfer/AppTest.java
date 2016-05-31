@@ -5,8 +5,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.transfer.helper.Jdbc;
+import ru.transfer.init.ClientAccountBatchQueries;
 import ru.transfer.init.CrossRateBatchQueries;
 import ru.transfer.init.DdlBatchQueries;
+import ru.transfer.init.OperationBatchQueries;
 import ru.transfer.model.*;
 import ru.transfer.query.CommonQuery;
 import ru.transfer.query.DataQuery;
@@ -20,6 +22,7 @@ import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 
 /**
  *
@@ -34,11 +37,14 @@ public class AppTest {
     @Before
     public void init() {
         if (!isInit) {
+            //TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
             isInit = true;
             Jdbc jdbc = new Jdbc();
             try {
                 jdbc.executeBatch(new DdlBatchQueries());
                 jdbc.executeBatch(new CrossRateBatchQueries());
+                jdbc.executeBatch(new ClientAccountBatchQueries());
+                jdbc.executeBatch(new OperationBatchQueries());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -108,10 +114,12 @@ public class AppTest {
     @Test
     public void test () {
         try {
+            log.info("{}", Utils.first( new Jdbc().executeQuery("select count(*) as cnt from aaa_oper")).get("CNT"));
+
             Client client = new Client();
             client.setLastName("Lastname1");
             client.setFirstName("Firstname1");
-            client.setModifyDate(Utils.dateTimeToTimestamp("2006-01-01T00:00:00+0000"));
+            client.setModifyDate(Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000"));
             client = operation.addClient(client);
             assert analytical.client(client.getClientId()) != null;
 
@@ -126,7 +134,7 @@ public class AppTest {
             client.setLastName("Lastname2");
             client.setFirstName("Firstname2");
             client = operation.addClient(client);
-            client.setModifyDate(Utils.dateTimeToTimestamp("2006-01-01T00:00:00+0000"));
+            client.setModifyDate(Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000"));
             assert analytical.client(client.getClientId()) != null;
 
             account = new Account();
@@ -156,7 +164,6 @@ public class AppTest {
             complexOper.getOperations().add(inputOperation);
 
             operation.addOpers(complexOper);
-
             ExtractRoot extractRoot = analytical.extracts("ACC00001", Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000"), new Timestamp(System.currentTimeMillis()));
 
             assert extractRoot != null;
