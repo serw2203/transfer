@@ -5,7 +5,6 @@ import ru.transfer.query.BatchQueries;
 
 import java.sql.Connection;
 import java.sql.Statement;
-import java.util.List;
 
 /**
  *
