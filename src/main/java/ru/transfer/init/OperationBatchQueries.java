@@ -16,7 +16,7 @@ public class OperationBatchQueries implements BatchQueries {
     private static Logger logger = LoggerFactory.getLogger(OperationBatchQueries.class);
 
     private final static SimpleDateFormat YYYYMMDDHHMMSS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private final static int DAY_COUNT = 10;
+    private final static int DAY_COUNT = 6;
     private final static int STEP = 366;
 
     private final static String INSERT_OPER =
