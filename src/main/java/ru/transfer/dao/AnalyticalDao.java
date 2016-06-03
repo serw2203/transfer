@@ -24,5 +24,7 @@ public interface AnalyticalDao {
 
     List<Balance> balance(Jdbc jdbc, String accNum, Timestamp date) throws Exception;
 
+    List<Balance> balance(Jdbc jdbc, String accNum, Timestamp dat, boolean includeDate) throws Exception;
+
     List<Extract> extracts (Jdbc jdbc, String accNum, Timestamp startDate, Timestamp stopDate) throws Exception;
  }

@@ -116,7 +116,6 @@
             <xs:element name="accId" type="xs:long"></xs:element>
             <xs:element name="accNum" type="xs:string"></xs:element>
             <xs:element name="turnDate" type="xs:dateTime"></xs:element>
-            <xs:element name="rate" type="xs:decimal"></xs:element>
             <xs:element name="corCurCode" type="xs:string"></xs:element>
             <xs:element name="corAmount" type="xs:decimal"></xs:element>
             <xs:element name="corAccId" type="xs:long"></xs:element>
@@ -139,8 +138,7 @@
             <xs:extension base="trans:operation">
                 <xs:sequence>
                     <xs:element name="inputDate" type="xs:dateTime"></xs:element>
-                    <xs:element name="parishCurrency" type="xs:string"></xs:element>
-                    <xs:element name="parishAmount" type="xs:decimal"></xs:element>
+                    <xs:element name="inputAmount" type="xs:decimal"></xs:element>
                     <xs:element name="inputCurrency" type="xs:string"></xs:element>
                     <xs:element name="inputAccount" type="xs:string"></xs:element>
                 </xs:sequence>
@@ -151,6 +149,12 @@
     <xs:complexType name="outputOperation">
         <xs:complexContent>
             <xs:extension base="trans:operation">
+                <xs:sequence>
+                    <xs:element name="outputDate" type="xs:dateTime"></xs:element>
+                    <xs:element name="outputAmount" type="xs:decimal"></xs:element>
+                    <xs:element name="outputAccount" type="xs:string"></xs:element>
+                    <xs:element name="outputCurrency" type="xs:string"></xs:element>
+                </xs:sequence>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -158,6 +162,14 @@
     <xs:complexType name="transferOperation">
         <xs:complexContent>
             <xs:extension base="trans:operation">
+                <xs:sequence>
+                    <xs:element name="transferDate" type="xs:dateTime"></xs:element>
+                    <xs:element name="sourceAmount" type="xs:decimal"></xs:element>
+                    <xs:element name="sourceAccount" type="xs:string"></xs:element>
+                    <xs:element name="sourceCurrency" type="xs:string"></xs:element>
+                    <xs:element name="destAccount" type="xs:string"></xs:element>
+                    <xs:element name="destCurrency" type="xs:string"></xs:element>
+                </xs:sequence>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

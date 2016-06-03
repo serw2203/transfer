@@ -91,7 +91,7 @@ public class AnalyticalFace {
     @Path("/balance/{acc_num}/{date}")
     @Produces({MediaType.APPLICATION_JSON})
     public Response balance(@PathParam("acc_num") String accNum,
-                         @PathParam("date") Timestamp date) {
+                            @PathParam("date") Timestamp date) {
         try {
             return Utils.ok(analytical.balance(accNum, date));
         } catch (Exception e) {
@@ -103,8 +103,8 @@ public class AnalyticalFace {
     @Path("/extracts/{acc_num}/{start_date}/{stop_date}")
     @Produces({MediaType.APPLICATION_JSON})
     public Response extracts(@PathParam("acc_num") String accNum,
-                               @PathParam("start_date") Timestamp startDate,
-                               @PathParam("stop_date") Timestamp stopDate) {
+                             @PathParam("start_date") Timestamp startDate,
+                             @PathParam("stop_date") Timestamp stopDate) {
         try {
             return Utils.ok(analytical.extracts(accNum, startDate, stopDate));
         } catch (Exception e) {

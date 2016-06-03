@@ -58,7 +58,7 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
             return CommonQuery.instance(
                     "select c.client_id, hc.last_name, hc.first_name, hc.middle_name, hc.modify_date from aaa_client c\n" +
                     "join aaa_h_client hc on c.client_id = hc.client_id and hc.cli_version = 0\n" +
-                    "where c.client_id != 0 and c.client_id = ?", this.params).createPreparedStatement(connection);
+                    "where c.client_id = ?", this.params).createPreparedStatement(connection);
         }
 
         @Override
@@ -178,8 +178,11 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
     /*BALANCE*/
     private static class BalanceDataQuery implements DataQuery<Balance> {
         private Object[] params;
+        private boolean includeDate;
 
-        public BalanceDataQuery withParams(String accNum, Timestamp date) {
+
+        public BalanceDataQuery withParams(String accNum, Timestamp date, boolean includeDate) {
+            this.includeDate = includeDate;
             this.params = new Object[]{Utils.NNE(date), Utils.NNE(accNum)};
             return this;
         }
@@ -191,7 +194,7 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
                     "select a.acc_id, a.acc_num, coalesce (b.balance, 0) - coalesce(sum(t.d_amount - t.k_amount), 0) as balance, c.cur_code\n" +
                             "from aaa_account a join aaa_currency c on 1 = 1\n" +
                             "left join aaa_balance b on a.acc_id = b.acc_id and c.cur_code = b.cur_code\n" +
-                            "left join aaa_turn t on t.acc_id = b.acc_id and t.cur_code = b.cur_code  and t.turn_date > ?\n" +
+                            "left join aaa_turn t on t.acc_id = b.acc_id and t.cur_code = b.cur_code  and t.turn_date " + (includeDate ? ">" : ">=") + " ?\n" +
                             "where a.acc_num = ?\n" +
                             "group by a.acc_id, a.acc_num, c.cur_code, coalesce (b.balance, 0)", this.params)
                     .createPreparedStatement(connection);
@@ -214,8 +217,13 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
     }
 
     @Override
-    public List<Balance> balance(Jdbc jdbc, String accNum, Timestamp date) throws Exception {
-        return jdbc.executeQuery(new BalanceDataQuery().withParams(accNum, date));
+    public List<Balance> balance(Jdbc jdbc, String accNum, Timestamp date, boolean includeDate ) throws Exception {
+        return jdbc.executeQuery(new BalanceDataQuery().withParams(accNum, date, includeDate));
+    }
+
+    @Override
+    public List<Balance> balance(Jdbc jdbc, String accNum, Timestamp date ) throws Exception {
+        return jdbc.executeQuery(new BalanceDataQuery().withParams(accNum, date, true));
     }
 
     /*OPERATIONS*/
@@ -232,16 +240,16 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
             this.params = Utils.NNE(params);
             return CommonQuery.instance(
                     "select o.oper_id, o.h_client_id, hc.client_id, hc.last_name, hc.first_name, hc.middle_name, o.oper_date, o.oper_type,\n" +
-                            "       s.d_amount - s.k_amount as amount, sa.acc_id, sa.acc_num, s.cur_code, s.turn_date, o.rate,\n" +
+                            "       s.d_amount - s.k_amount as amount, sa.acc_id, sa.acc_num, s.cur_code, s.turn_date,\n" +
                             "       t.d_amount - t.k_amount as cor_amount, ta.acc_id as cor_acc_id, ta.acc_num as cor_acc_num, t.cur_code as cor_cur_code,\n" +
                             "       t.turn_date as cor_turn_date\n" +
                             "from aaa_oper o\n" +
                             "join aaa_h_client hc on hc.h_client_id = o.h_client_id\n" +
                             "join aaa_turn s on o.oper_id = s.oper_id and o.oper_cur_code = s.cur_code\n" +
-                            "join aaa_turn t on o.oper_id = t.oper_id and t.turn_id != s.turn_id\n" +
+                            "left join aaa_turn t on o.oper_id = t.oper_id and t.turn_id != s.turn_id\n" +
                             "               and (o.oper_acc_id != t.acc_id or o.oper_cur_code != t.cur_code)\n" +
                             "join aaa_account sa on sa.acc_id = s.acc_id\n" +
-                            "join aaa_account ta on ta.acc_id = t.acc_id\n" +
+                            "left join aaa_account ta on ta.acc_id = t.acc_id\n" +
                             "where sa.acc_num = ? and o.oper_date between ? and ? order by o.oper_date desc", this.params)
                     .createPreparedStatement(connection);
         }
@@ -263,7 +271,6 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
                 ext.setAccNum(resultSet.getString("ACC_NUM"));
                 ext.setCurCode(resultSet.getString("CUR_CODE"));
                 ext.setAmount(resultSet.getBigDecimal("AMOUNT"));
-                ext.setRate(resultSet.getBigDecimal("RATE"));
                 ext.setTurnDate(resultSet.getTimestamp("TURN_DATE"));
                 ext.setCorAccId(resultSet.getLong("COR_ACC_ID"));
                 ext.setCorAccNum(resultSet.getString("COR_ACC_NUM"));

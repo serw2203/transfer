@@ -73,8 +73,7 @@ public class DdlBatchQueries implements BatchQueries {
                     "oper_date timestamp not null, " +
                     "oper_type varchar(12) not null, " +
                     "oper_acc_id bigint not null, " +
-                    "oper_cur_code varchar(5) not null, " +
-                    "rate decimal(18, 8) not null);",
+                    "oper_cur_code varchar(5) not null);",
 
             "alter table aaa_oper add constraint f_oper_on_oper_type_oper_type foreign key (oper_type) " +
                     "references aaa_oper_type (oper_type);",

@@ -1,6 +1,5 @@
 package ru.transfer.dao;
 
-import ru.transfer.conf.Config;
 import ru.transfer.expt.TransferAppException;
 import ru.transfer.helper.Jdbc;
 import ru.transfer.model.*;
@@ -22,7 +21,6 @@ public class OperationDaoImpl implements OperationDao {
     }
 
     /**
-     *
      * @param jdbc
      * @param operDate
      * @param operType
@@ -40,7 +38,7 @@ public class OperationDaoImpl implements OperationDao {
                 "select top 1 " +
                         "hc.h_client_id, a.client_id, a.acc_id, ta.acc_id as cor_acc_id, hc.last_name, hc.first_name, hc.middle_name from aaa_account a\n" +
                         "join aaa_h_client hc on hc.client_id = a.client_id and a.acc_num = ?\n" +
-                        "join aaa_account ta on ta.acc_num = ?\n" +
+                        "left join aaa_account ta on ta.acc_num = ?\n" +
                         "where hc.modify_date <= ?\n" +
                         "order by hc.modify_date desc", new Object[]{acc, corAcc, operDate}));
         Extract ext = new Extract();
@@ -52,32 +50,31 @@ public class OperationDaoImpl implements OperationDao {
         ext.setMiddleName(map.get("MIDDLE_NAME") == null ? null : map.get("MIDDLE_NAME").toString());
         ext.setOperType(operType);
         ext.setOperDate(operDate);
-        ext.setRate(analyticalDao.rate(jdbc, corCur, cur, operDate).getRate());
-        ext.setAmount(corAmount.multiply(ext.getRate()).setScale(2, BigDecimal.ROUND_HALF_UP));
+        Rate rate = analyticalDao.rate(jdbc, corCur, cur, operDate);
+        ext.setAmount(corAmount.multiply(rate.getRate()).setScale(2, BigDecimal.ROUND_HALF_UP));
         ext.setAccId(Utils.NNE(map.get("ACC_ID")));
         ext.setAccNum(acc);
         ext.setCurCode(cur);
         ext.setTurnDate(operDate);
-        ext.setCorAccId(Utils.NNE(map.get("COR_ACC_ID")));
+        Object corAccId = map.get("COR_ACC_ID");
+        ext.setCorAccId(corAccId == null ? null : (Long) corAccId);
         ext.setCorAccNum(corAcc);
         ext.setCorAmount(corAmount);
         ext.setCorCurCode(corCur);
         ext.setCorTurnDate(operDate);
         if (jdbc.executeUpdate(
-                "insert into aaa_oper (oper_id, h_client_id, oper_date, oper_type, oper_acc_id, oper_cur_code, rate)\n" +
-                        "values (?, ?, ?, ?, ?, ?, ?)", new Object[]{
+                "insert into aaa_oper (oper_id, h_client_id, oper_date, oper_type, oper_acc_id, oper_cur_code)\n" +
+                        "values (?, ?, ?, ?, ?, ?)", new Object[]{
                         ext.getOperId(),
                         ext.getHClientId(),
                         ext.getOperDate(),
                         ext.getOperType(),
                         ext.getAccId(),
-                        ext.getCurCode(),
-                        ext.getRate()}) != 1) throw new RuntimeException("Insert operation failed");
+                        ext.getCurCode()}) != 1) throw new RuntimeException("Insert operation failed");
         return ext;
     }
 
     /**
-     *
      * @param jdbc
      * @param operId
      * @param accId
@@ -101,7 +98,6 @@ public class OperationDaoImpl implements OperationDao {
     }
 
     /**
-     *
      * @param jdbc
      * @param debitAccId
      * @param debitCur
@@ -114,9 +110,9 @@ public class OperationDaoImpl implements OperationDao {
      */
     private void balance(Jdbc jdbc, Long debitAccId, String debitCur, BigDecimal debitAmount,
                          Long creditAccId, String creditAccNum, String creditCur, BigDecimal creditAmount) throws Exception {
-        if (creditAccId.longValue() != 0L) {
+        if (creditAccId != null) {
             BigDecimal balance = Utils.NNE(Utils.first(jdbc.executeQuery(
-                    "select coalesce(b.balance, 0) as balance from (select ? as acc_id, ? as cur_code) x \n" +
+                    "select coalesce(b.balance, 0) as balance from (select cast(?  as bigint) as acc_id, cast(? as varchar(5)) as cur_code) x \n" +
                             "left join aaa_balance b on x.acc_id = b.acc_id and x.cur_code = b.cur_code",
                     new Object[]{creditAccId, creditCur})).get("BALANCE"));
             if (creditAmount.compareTo(balance) > 0) {
@@ -124,6 +120,7 @@ public class OperationDaoImpl implements OperationDao {
                         "Insufficient funds in the account %s to be debited", creditAccNum));
             }
         }
+
         if (jdbc.executeUpdate("merge into aaa_balance key (acc_id, cur_code) \n" +
                         "select x.acc_id, x.cur_code, coalesce(b.balance,0) + x.amount from \n" +
                         "       (select cast(? as bigint) as acc_id, cast(? as varchar(5)) as cur_code, cast(? as decimal(18, 2)) as amount from dual union \n" +
@@ -143,9 +140,8 @@ public class OperationDaoImpl implements OperationDao {
     public Extract input(Jdbc jdbc, InputOperation operation) throws Exception {
         if (jdbc.hasTrans()) {
             Extract extr = operation(jdbc, operation.getInputDate(), "INPUT", operation.getInputAccount(), operation.getInputCurrency(),
-                      Config.ACCOWNER, operation.getParishCurrency(), operation.getParishAmount());
-            turn(jdbc, extr.getOperId(),extr.getAccId(), extr.getCurCode(), extr.getAmount(), BigDecimal.ZERO, operation.getInputDate());
-            turn(jdbc, extr.getOperId(),extr.getCorAccId(), extr.getCorCurCode(), BigDecimal.ZERO, extr.getCorAmount(), operation.getInputDate());
+                    null, operation.getInputCurrency(), operation.getInputAmount());
+            turn(jdbc, extr.getOperId(), extr.getAccId(), extr.getCurCode(), extr.getAmount(), BigDecimal.ZERO, operation.getInputDate());
             balance(jdbc, extr.getAccId(), extr.getCurCode(), extr.getAmount(),
                     extr.getCorAccId(), extr.getCorAccNum(), extr.getCorCurCode(), extr.getCorAmount());
             return extr;
@@ -156,6 +152,12 @@ public class OperationDaoImpl implements OperationDao {
     @Override
     public Extract output(Jdbc jdbc, OutputOperation operation) throws Exception {
         if (jdbc.hasTrans()) {
+            Extract extr = operation(jdbc, operation.getOutputDate(), "OUTPUT", operation.getOutputAccount(), operation.getOutputCurrency(),
+                    null, operation.getOutputCurrency(), operation.getOutputAmount());
+            turn(jdbc, extr.getOperId(), extr.getAccId(), extr.getCurCode(), BigDecimal.ZERO, extr.getAmount(), operation.getOutputDate());
+            balance(jdbc, extr.getCorAccId(), extr.getCorCurCode(), extr.getCorAmount(),
+                    extr.getAccId(), extr.getAccNum(), extr.getCurCode(), extr.getAmount());
+            return extr;
         }
         throw new IllegalStateException("Transaction not found");
     }

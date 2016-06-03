@@ -30,6 +30,12 @@ public class OperationServiceImpl implements OperationService {
             for (Operation oper : complexOper.getOperations()) {
                 if (oper instanceof InputOperation) {
                     result.getExtracts().add(operationDao.input(jdbc, (InputOperation) oper));
+                } else
+                if (oper instanceof OutputOperation) {
+                    result.getExtracts().add(operationDao.output(jdbc, (OutputOperation) oper));
+                } else
+                if (oper instanceof TransferOperation) {
+                        result.getExtracts().add(operationDao.transfer(jdbc, (TransferOperation) oper));
                 } else {
                     throw new IllegalArgumentException("Unknown operation");
                 }
