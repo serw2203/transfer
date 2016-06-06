@@ -53,6 +53,11 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     }
 
     @Override
+    public BigDecimal saldo (String accNum, String curCode) throws Exception{
+        return this.analyticalDao.saldo(new Jdbc(), accNum, curCode);
+    }
+
+    @Override
     public BalanceRoot balance(String accNum, Timestamp date) throws Exception {
         BalanceRoot balances = new BalanceRoot();
         balances.getBalances().addAll(this.analyticalDao.balance(new Jdbc(), accNum, date));

@@ -21,6 +21,8 @@ public interface AnalyticalService {
 
     RateRoot rates (Timestamp dateRate) throws Exception;
 
+    BigDecimal saldo (String accNum, String curCode) throws Exception;
+
     BalanceRoot balance (String accNum, Timestamp date) throws Exception;
 
     ExtractRoot extracts (String accNum, Timestamp startDate, Timestamp stopDate) throws Exception;

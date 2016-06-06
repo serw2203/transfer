@@ -18,18 +18,14 @@ import java.util.Map;
  */
 public class OperationDaoImpl implements OperationDao {
 
+    private final static String INPUT = "INPUT";
+    private final static String OUTPUT = "OUTPUT";
+    private final static String TRANSFER = "TRANSFER";
+
     private final AnalyticalDao analyticalDao = new AnalyticalDaoImpl();
 
-    @Override
-    public BigDecimal currentSaldo(Jdbc jdbc, Long accId, String curCode) throws Exception {
-        return Utils.NNE(Utils.first(jdbc.executeQuery(
-                "select coalesce(b.balance, 0) as balance from (select cast(?  as bigint) as acc_id, cast(? as varchar(5)) as cur_code) x \n" +
-                        "left join aaa_balance b on x.acc_id = b.acc_id and x.cur_code = b.cur_code",
-                new Object[]{accId, curCode})).get("BALANCE"));
-    }
-
     private Long sequence(Jdbc jdbc) throws Exception {
-        return Utils.NNE(Utils.first(jdbc.executeQuery("select seq_id.nextval as id")).get("ID"));
+        return (Long) Utils.first(jdbc.executeQuery("select seq_id.nextval as id")).get("ID");
     }
 
     private Extract operation(Jdbc jdbc,
@@ -53,12 +49,10 @@ public class OperationDaoImpl implements OperationDao {
         extract.setMiddleName(map.get("MIDDLE_NAME") == null ? null : map.get("MIDDLE_NAME").toString());
         extract.setOperType(Utils.NNE(operType, "Operation type must to be not null"));
         extract.setOperDate(Utils.NNE(operDate, "Operation date  to be not null"));
-
         extract.setAmount(Utils.NNE(amount, "Amount must to be not null"));
         extract.setAccId(Utils.NNE(map.get("ACC_ID"), "Unknown account"));
         extract.setAccNum(Utils.NNE(accNum, "Account must to be not null"));
         extract.setCurCode(Utils.NNE(curCode, "Currency code must to be not null"));
-        extract.setTurnDate(Utils.NNE(operDate));
 
         Object corAccId = map.get("COR_ACC_ID");
         if (corAccId != null) {
@@ -72,8 +66,6 @@ public class OperationDaoImpl implements OperationDao {
             extract.setCorAccId(0L);
         }
 
-        defineTurn(extract);
-
         if (jdbc.executeUpdate(
                 "insert into aaa_oper (oper_id, h_client_id, oper_date, oper_type, oper_acc_id, oper_cur_code)\n" +
                         "values (?, ?, ?, ?, ?, ?)", new Object[]{
@@ -83,29 +75,51 @@ public class OperationDaoImpl implements OperationDao {
                         extract.getOperType(),
                         extract.getAccId(),
                         extract.getCurCode()}) != 1) throw new RuntimeException("Insert operation failed");
+
         return extract;
     }
 
-    private void defineTurn(Extract extract) {
-        Turn turn = new Turn();
-        if ("INPUT".equals(extract.getOperType())) {
-            turn.setDebitAccId(extract.getAccId());
-            turn.setDebitCur(extract.getCurCode());
-            turn.setDebitAmount(extract.getAmount());
-            turn.setCreditAccId(extract.getCorAccId());
-            turn.setCreditCur(extract.getCorCurCode());
-            turn.setCreditAmount(extract.getCorAmount());
+    @Override
+    public Extract call(Jdbc jdbc, Operation operation) throws Exception {
+        if (jdbc.inTrans()) {
+            Extract extract = dispatch(jdbc, operation);
+            Turn turn = turnFromExtract(extract);
+            turn(jdbc,  turn);
+            mergeBalance(jdbc, turn);
+            return extract;
+        }
+        throw new IllegalStateException("Transaction not found");
+    }
+
+    private Extract dispatch (Jdbc jdbc, Operation operation) throws Exception {
+        if (operation instanceof InputOperation) {
+            return input(jdbc, (InputOperation) operation);
         } else
-        if ("OUTPUT".equals(extract.getOperType())) {
-            turn.setDebitAccId(extract.getCorAccId());
-            turn.setDebitCur(extract.getCorCurCode());
-            turn.setDebitAmount(extract.getCorAmount());
-            turn.setCreditAccId(extract.getAccId());
-            turn.setCreditCur(extract.getCurCode());
-            turn.setCreditAmount(extract.getAmount());
+        if (operation instanceof OutputOperation) {
+            return output(jdbc, (OutputOperation) operation);
         } else
-            throw new RuntimeException(String.format("Unknown operation type - %s", extract.getOperType()));
-        extract.setTurn(turn);
+        if (operation instanceof TransferOperation) {
+            return transfer(jdbc, (TransferOperation) operation);
+        } else
+            throw new RuntimeException("Unknown operation type");
+    }
+
+    private Extract input(Jdbc jdbc, InputOperation operation) throws Exception {
+        return operation(jdbc, operation.getOperDate(), INPUT,
+                operation.getAccount(), operation.getCurrency(), operation.getAmount(),
+                null, null);
+    }
+
+    private Extract output(Jdbc jdbc, OutputOperation operation) throws Exception {
+        return operation(jdbc, operation.getOperDate(), OUTPUT,
+                operation.getAccount(), operation.getCurrency(), operation.getAmount(),
+                null, null);
+    }
+
+    private Extract transfer(Jdbc jdbc, TransferOperation operation) throws Exception {
+        return operation(jdbc, operation.getOperDate(), TRANSFER,
+                operation.getAccount(), operation.getCurrency(), operation.getAmount(),
+                operation.getDestAccount(), operation.getDestCurrency());
     }
 
     private static class TurnUpdateQuery implements UpdateQuery {
@@ -135,26 +149,65 @@ public class OperationDaoImpl implements OperationDao {
         }
     }
 
-    private void turn(Jdbc jdbc, Extract extract) throws Exception {
-        if (extract.getTurn().getDebitAccId().longValue() != 0L) {
-            if (jdbc.executeUpdate(new TurnUpdateQuery().withParams(extract.getOperId(),
-                    extract.getTurn().getDebitAccId(),
-                    extract.getTurn().getDebitCur(),
-                    extract.getTurn().getDebitAmount(),
+    private static class Turn {
+        private Long operId;
+        private Long debitAccId;
+        private String debitCur;
+        private BigDecimal debitAmount;
+        private Long creditAccId;
+        private String creditCur;
+        private BigDecimal creditAmount;
+        private Timestamp turnDate;
+    }
+    
+    private void turn(Jdbc jdbc, Turn turn) throws Exception {
+        if (turn.debitAccId.longValue() != 0L) {
+            if (jdbc.executeUpdate(new TurnUpdateQuery().withParams(turn.operId,
+                    turn.debitAccId,
+                    turn.debitCur,
+                    turn.debitAmount,
                     BigDecimal.ZERO,
-                    extract.getOperDate())) != 1) throw new RuntimeException("Insert turns failed");
+                    turn.turnDate)) != 1) throw new RuntimeException("Insert turns failed");
         }
-        if (extract.getTurn().getCreditAccId().longValue() != 0L) {
-            if (jdbc.executeUpdate(new TurnUpdateQuery().withParams(extract.getOperId(),
-                    extract.getTurn().getCreditAccId(),
-                    extract.getTurn().getCreditCur(),
+        if (turn.creditAccId.longValue() != 0L) {
+            if (jdbc.executeUpdate(new TurnUpdateQuery().withParams(turn.operId,
+                    turn.creditAccId,
+                    turn.creditCur,
                     BigDecimal.ZERO,
-                    extract.getTurn().getCreditAmount(),
-                    extract.getOperDate())) != 1) throw new RuntimeException("Insert turns failed");
+                    turn.creditAmount,
+                    turn.turnDate)) != 1) throw new RuntimeException("Insert turns failed");
         }
     }
 
-    private void mergeBalance(Jdbc jdbc, Extract extract) throws Exception {
+    private Turn turnFromExtract (Extract extract) {
+        Turn turn = new Turn();
+        turn.operId = extract.getOperId();
+        turn.turnDate = extract.getOperDate();
+        if (INPUT.equals(extract.getOperType())) {
+            turn.debitAccId = extract.getAccId();
+            turn.debitCur = extract.getCurCode();
+            turn.debitAmount = extract.getAmount();
+            turn.creditAccId = 0L;
+        } else
+        if (OUTPUT.equals(extract.getOperType())) {
+            turn.debitAccId=0L;
+            turn.creditAccId=extract.getAccId();
+            turn.creditCur=extract.getCurCode();
+            turn.creditAmount=extract.getAmount();
+        } else
+        if (TRANSFER.equals(extract.getOperType())) {
+            turn.debitAccId = extract.getCorAccId();
+            turn.debitCur = extract.getCorCurCode();
+            turn.debitAmount = extract.getCorAmount();
+            turn.creditAccId = extract.getAccId();
+            turn.creditCur = extract.getCurCode();
+            turn.creditAmount = extract.getAmount();
+        } else
+            throw new RuntimeException(String.format("Unknown operation type - %s", extract.getOperType()));
+        return turn;
+    }
+
+    private void mergeBalance(Jdbc jdbc, Turn turn) throws Exception {
         if (jdbc.executeUpdate(
                 "merge into aaa_balance key (acc_id, cur_code) \n" +
                         "select x.acc_id, x.cur_code, coalesce(b.balance,0) + x.amount from \n" +
@@ -163,46 +216,12 @@ public class OperationDaoImpl implements OperationDao {
                         "left join aaa_balance b on b.acc_id = x.acc_id and b.cur_code = x.cur_code \n" +
                         "where x.acc_id != 0",
                 new Object[]{
-                        extract.getTurn().getDebitAccId(),
-                        extract.getTurn().getDebitCur(),
-                        extract.getTurn().getDebitAmount(),
-                        extract.getTurn().getCreditAccId(),
-                        extract.getTurn().getCreditCur(),
-                        extract.getTurn().getCreditAmount()}) < 1) throw new RuntimeException("Merge balances failed");
-    }
-
-    @Override
-    public Extract input(Jdbc jdbc, InputOperation operation) throws Exception {
-        if (jdbc.inTrans()) {
-            Extract extract = operation(jdbc,
-                    operation.getOperDate(), "INPUT",
-                    operation.getAccount(), operation.getCurrency(), operation.getInputAmount(),
-                    null, null);
-            turn(jdbc, extract);
-            mergeBalance(jdbc, extract);
-            return extract;
-        }
-        throw new IllegalStateException("Transaction not found");
-    }
-
-    @Override
-    public Extract output(Jdbc jdbc, OutputOperation operation) throws Exception {
-        if (jdbc.inTrans()) {
-            Extract extract = operation(jdbc, operation.getOperDate(), "OUTPUT",
-                    operation.getAccount(), operation.getCurrency(), operation.getOutputAmount(),
-                    null, null);
-            turn(jdbc, extract);
-            mergeBalance(jdbc, extract);
-            return extract;
-        }
-        throw new IllegalStateException("Transaction not found");
-    }
-
-    @Override
-    public Extract transfer(Jdbc jdbc, TransferOperation operation) throws Exception {
-        if (jdbc.inTrans()) {
-        }
-        throw new IllegalStateException("Transaction not found");
+                        turn.debitAccId,
+                        turn.debitCur,
+                        turn.debitAmount,
+                        turn.creditAccId,
+                        turn.creditCur,
+                        turn.creditAmount}) < 1) throw new RuntimeException("Merge balances failed");
     }
 
     @Override

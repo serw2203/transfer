@@ -23,7 +23,8 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
     private static class CurrencyDataQuery implements DataQuery<Currency> {
         @Override
         public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
-            return CommonQuery.instance("select cur_code from aaa_currency").createPreparedStatement(connection);
+            return CommonQuery.instance(
+                    "select cur_code from aaa_currency").createPreparedStatement(connection);
         }
 
         @Override
@@ -217,6 +218,16 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
     }
 
     @Override
+    public BigDecimal saldo(Jdbc jdbc, String accNum, String curCode) throws Exception {
+        return Utils.NNE(Utils.first(jdbc.executeQuery(
+                "select coalesce(b.balance, 0) as balance from\n" +
+                        "(select cast(?  as varchar(20)) as acc_num, cast(? as varchar(5)) as cur_code) x\n" +
+                        "left join aaa_account a on a.acc_num = x.acc_num\n" +
+                        "left join aaa_balance b on a.acc_id = b.acc_id and x.cur_code = b.cur_code",
+                new Object[]{accNum, curCode})).get("BALANCE"));
+    }
+
+    @Override
     public List<Balance> balance(Jdbc jdbc, String accNum, Timestamp date, boolean includeDate) throws Exception {
         return jdbc.executeQuery(new BalanceDataQuery().withParams(accNum, date, includeDate));
     }
@@ -274,7 +285,6 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
                 extract.setAccNum(resultSet.getString("ACC_NUM"));
                 extract.setCurCode(resultSet.getString("CUR_CODE"));
                 extract.setAmount(resultSet.getBigDecimal("AMOUNT"));
-                extract.setTurnDate(resultSet.getTimestamp("TURN_DATE"));
                 extract.setCorAccId(resultSet.getLong("COR_ACC_ID"));
                 extract.setCorAccNum(resultSet.getString("COR_ACC_NUM"));
                 extract.setCorCurCode(resultSet.getString("COR_CUR_CODE"));

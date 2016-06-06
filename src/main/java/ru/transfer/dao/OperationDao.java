@@ -9,10 +9,7 @@ import java.math.BigDecimal;
  *
  */
 public interface OperationDao {
-    BigDecimal currentSaldo (Jdbc jdbc,Long accId, String curCOde) throws Exception;
     Client addClient(Jdbc jdbc, Client client) throws Exception;
     Account addAccount(Jdbc jdbc, Account account) throws Exception;
-    Extract input(Jdbc jdbc, InputOperation operation) throws Exception;
-    Extract output(Jdbc jdbc, OutputOperation operation) throws Exception;
-    Extract transfer(Jdbc jdbc, TransferOperation operation) throws Exception;
+    Extract call (Jdbc jdbc, Operation operation) throws Exception;
 }

@@ -110,7 +110,7 @@
             </xs:element>
             <xs:element name="operType" type="xs:string">
                 <xs:annotation>
-                    <xs:documentation xml:lang="en">Operation type (INIT, INPUT, OUTPUT, TRANSFER)</xs:documentation>
+                    <xs:documentation xml:lang="en">Operation type (INPUT, OUTPUT, TRANSFER)</xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="hClientId" type="xs:long">
@@ -158,11 +158,6 @@
                     <xs:documentation xml:lang="en">Account number</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="turnDate" type="xs:dateTime">
-                <xs:annotation>
-                    <xs:documentation xml:lang="en">Date of the transaction</xs:documentation>
-                </xs:annotation>
-            </xs:element>
             <xs:element name="corCurCode" type="xs:string">
                 <xs:annotation>
                     <xs:documentation xml:lang="en">Mail account currency</xs:documentation>
@@ -178,32 +173,16 @@
                     <xs:documentation xml:lang="en">Mail account identifier</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="corAccNum" type="xs:string">
+            <xs:element name="corAccNum" type="xs:string" nillable="true">
                 <xs:annotation>
                     <xs:documentation xml:lang="en">Mail account number</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="corTurnDate" type="xs:dateTime">
+            <xs:element name="corTurnDate" type="xs:dateTime" nillable="true">
                 <xs:annotation>
                     <xs:documentation xml:lang="en">Mail date of the transaction</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="turn" type="trans:turn">
-                <xs:annotation>
-                    <xs:documentation xml:lang="en">description turn</xs:documentation>
-                </xs:annotation>
-            </xs:element>
-        </xs:sequence>
-    </xs:complexType>
-
-    <xs:complexType name="turn">
-        <xs:sequence>
-            <xs:element name="debitAccId" type="xs:long"></xs:element>
-            <xs:element name="debitCur" type="xs:string"></xs:element>
-            <xs:element name="debitAmount" type="xs:decimal"></xs:element>
-            <xs:element name="creditAccId" type="xs:long"></xs:element>
-            <xs:element name="creditCur" type="xs:string"></xs:element>
-            <xs:element name="creditAmount" type="xs:decimal"></xs:element>
         </xs:sequence>
     </xs:complexType>
 
@@ -218,15 +197,13 @@
             <xs:element name="operDate" type="xs:dateTime"></xs:element>
             <xs:element name="currency" type="xs:string"></xs:element>
             <xs:element name="account" type="xs:string"></xs:element>
+            <xs:element name="amount" type="xs:decimal"></xs:element>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="inputOperation">
         <xs:complexContent>
             <xs:extension base="trans:operation">
-                <xs:sequence>
-                    <xs:element name="inputAmount" type="xs:decimal"></xs:element>
-                </xs:sequence>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -234,9 +211,6 @@
     <xs:complexType name="outputOperation">
         <xs:complexContent>
             <xs:extension base="trans:operation">
-                <xs:sequence>
-                    <xs:element name="outputAmount" type="xs:decimal"></xs:element>
-                </xs:sequence>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -245,7 +219,6 @@
         <xs:complexContent>
             <xs:extension base="trans:operation">
                 <xs:sequence>
-                    <xs:element name="sourceAmount" type="xs:decimal"></xs:element>
                     <xs:element name="destAccount" type="xs:string"></xs:element>
                     <xs:element name="destCurrency" type="xs:string"></xs:element>
                 </xs:sequence>

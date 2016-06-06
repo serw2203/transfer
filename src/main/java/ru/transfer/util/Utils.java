@@ -15,7 +15,9 @@ import java.lang.reflect.Array;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -91,6 +93,17 @@ public class Utils {
         } catch (ParseException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public static <T> T valueFrom (T obj, Set<T> set) {
+        Iterator<T> it = set.iterator();
+        while (it.hasNext()) {
+          T r = it.next();
+          if ( r.equals(obj) ) {
+              return r;
+          }
+        }
+        throw new RuntimeException("Object not found");
     }
 
     /*using in bindind.xjb*/

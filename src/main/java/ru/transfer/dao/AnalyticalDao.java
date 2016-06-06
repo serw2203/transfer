@@ -23,6 +23,8 @@ public interface AnalyticalDao {
 
     List<Rate> rates (Jdbc jdbc,Timestamp dateRate) throws Exception;
 
+    BigDecimal saldo (Jdbc jdbc,String accNum, String curCode) throws Exception;
+
     List<Balance> balance(Jdbc jdbc, String accNum, Timestamp date) throws Exception;
 
     List<Balance> balance(Jdbc jdbc, String accNum, Timestamp dat, boolean includeDate) throws Exception;

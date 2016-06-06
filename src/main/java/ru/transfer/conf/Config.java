@@ -93,7 +93,6 @@ public class Config {
             try {
                 long st = System.currentTimeMillis();
                 jdbc.executeBatch(new DdlBatchQueries());
-                log.trace("DDL INIT's - done!!! Elapsed time - {} s", (System.currentTimeMillis() - st) / 1000.0);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
