@@ -3,6 +3,7 @@ package ru.transfer.dao;
 import ru.transfer.helper.Jdbc;
 import ru.transfer.model.*;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
 

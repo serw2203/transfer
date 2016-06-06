@@ -2,6 +2,7 @@ package ru.transfer.service;
 
 import ru.transfer.model.*;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 /**

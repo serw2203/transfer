@@ -5,6 +5,7 @@ import ru.transfer.dao.AnalyticalDaoImpl;
 import ru.transfer.helper.Jdbc;
 import ru.transfer.model.*;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -60,15 +61,15 @@ public class AnalyticalServiceImpl implements AnalyticalService {
 
     @Override
     public ExtractRoot extracts(String accNum, Timestamp startDate, Timestamp stopDate) throws Exception {
-        ExtractRoot exts = new ExtractRoot();
+        ExtractRoot extracts = new ExtractRoot();
         Jdbc jdbc = new Jdbc();
         jdbc.createTrans();
         try {
-            exts.getInput().addAll(this.analyticalDao.balance(jdbc, accNum, startDate, false));
-            exts.getOutput().addAll(this.analyticalDao.balance(jdbc, accNum, stopDate));
-            exts.getExtracts().addAll(this.analyticalDao.extracts(jdbc, accNum, startDate, stopDate));
+            extracts.getInput().addAll(this.analyticalDao.balance(jdbc, accNum, startDate, false));
+            extracts.getOutput().addAll(this.analyticalDao.balance(jdbc, accNum, stopDate));
+            extracts.getExtracts().addAll(this.analyticalDao.extracts(jdbc, accNum, startDate, stopDate));
             jdbc.commitTrans();
-            return exts;
+            return extracts;
         } catch (Exception e) {
             jdbc.rollbackTrans();
             e.printStackTrace();

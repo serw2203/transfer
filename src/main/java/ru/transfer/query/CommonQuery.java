@@ -34,7 +34,7 @@ public class CommonQuery implements Query {
                 if (this.params[i] != null) {
                     stmt.setObject(i + 1, this.params[i]);
                 } else {
-                    stmt.setNull(i + 1, Types.VARCHAR);
+                    stmt.setNull(i + 1, Types.VARCHAR); //todo : stmt.getMetaData().getColumnType() ???
                 }
             }
         }

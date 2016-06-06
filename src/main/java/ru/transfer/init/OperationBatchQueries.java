@@ -27,20 +27,18 @@ public class OperationBatchQueries implements BatchQueries {
     private final static String INSERT_INPUT_TURNS =
             "insert into aaa_turn (turn_id, oper_id, acc_id, cur_code, d_amount, k_amount, turn_date)\n" +
                     "select seq_id.nextval as turn_id, o.oper_id,\n" +
-                    "        case x.ix when 0 then 0 else o.oper_acc_id end as oper_acc_id, o.oper_cur_code,\n" +
-                    "        case x.ix when 0 then 0 else s.amount end as d_amount,\n" +
-                    "        case x.ix when 0 then s.amount else 0 end as k_amount, o.oper_date from aaa_oper o\n" +
-                    "join (select 0 as ix union select 1 as ix) x on 1 = 1\n" +
+                    "        o.oper_acc_id, o.oper_cur_code,\n" +
+                    "        s.amount as d_amount,\n" +
+                    "        0 as k_amount, o.oper_date from aaa_oper o\n" +
                     "join (select %s as amount) s on 1 = 1\n" +
                     "where oper_date = '%s' order by o.oper_id";
 
     private final static String INSERT_OUTPUT_TURNS =
             "insert into aaa_turn (turn_id, oper_id, acc_id, cur_code, d_amount, k_amount, turn_date)\n" +
                     "select seq_id.nextval as turn_id, o.oper_id,\n" +
-                    "        case x.ix when 0 then 0 else o.oper_acc_id end as oper_acc_id, o.oper_cur_code,\n" +
-                    "        case x.ix when 0 then s.amount else 0 end as d_amount,\n" +
-                    "        case x.ix when 0 then 0 else s.amount end as k_amount, o.oper_date from aaa_oper o\n" +
-                    "join (select 0 as ix union select 1 as ix) x on 1 = 1\n" +
+                    "        o.oper_acc_id as oper_acc_id, o.oper_cur_code,\n" +
+                    "        0 as d_amount,\n" +
+                    "        s.amount  as k_amount, o.oper_date from aaa_oper o\n" +
                     "join (select %s as amount) s on 1 = 1\n" +
                     "where oper_date = '%s' order by o.oper_id";
 
@@ -69,7 +67,6 @@ public class OperationBatchQueries implements BatchQueries {
             statement.addBatch(String.format(INSERT_OUTPUT_TURNS, "1.00", outputDate));
             calendar.add(Calendar.HOUR_OF_DAY, 19 + 24 * STEP);
         }
-
         statement.addBatch(SYNC_BALANCES_ALL);
         return statement;
     }

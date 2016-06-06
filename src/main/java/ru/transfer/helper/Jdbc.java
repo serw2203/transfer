@@ -18,6 +18,7 @@ import java.util.Map;
 public class Jdbc {
     private final static Logger log = LoggerFactory.getLogger(Jdbc.class);
 
+    private long trst;
     private Connection connection = null;
 
     private void check() {
@@ -51,51 +52,42 @@ public class Jdbc {
         return conn == null ? query.createStatement(this.connection) : query.createStatement(conn);
     }
 
-    public boolean hasTrans() throws Exception {
+    public boolean inTrans() throws Exception {
         return this.connection != null && !this.connection.getAutoCommit();
     }
 
-    /**
-     * @throws Exception
-     */
     public void createTrans() throws Exception {
         if (this.connection != null) {
             throw new IllegalStateException("Transaction already exist. Nested transaction not supported");
         }
-        this.log.trace("CREATE TRANS ***********************");
+        log.trace("CREATE TRANS ***********************");
         this.connection = ConnectionHelper.connection();
         this.connection.setAutoCommit(false);
+        this.trst = System.currentTimeMillis();
     }
 
-    /**
-     * @throws SQLException
-     */
     public void commitTrans() throws Exception {
         check();
         try {
-            this.log.trace("COMMIT TRANS ***********************");
+            log.trace("COMMIT TRANS *********************** Elapsed time - {} s",
+                    (System.currentTimeMillis() - this.trst) / 1000.0);
             this.connection.commit();
         } finally {
             releaseTrans();
         }
     }
 
-    /**
-     * @throws SQLException
-     */
     public void rollbackTrans() throws Exception {
         check();
         try {
-            this.log.trace("ROLLBACK TRANS ***********************");
+            log.trace("ROLLBACK TRANS *********************** Elapsed time - {} s",
+                    (System.currentTimeMillis() - this.trst) / 1000.0);
             this.connection.rollback();
         } finally {
             releaseTrans();
         }
     }
 
-    /**
-     * @throws SQLException
-     */
     protected void releaseTrans() throws Exception {
         check();
         try {
@@ -173,6 +165,24 @@ public class Jdbc {
         try (
                 Connection connection = conn();
                 PreparedStatement stmt = stmt(connection, sql, params)) {
+            int result = stmt.executeUpdate();
+            stop(st);
+            return result;
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * @param query
+     * @return
+     * @throws Exception
+     */
+    public int executeUpdate(UpdateQuery query) throws Exception {
+        long st = start();
+        try (
+                Connection connection = conn();
+                PreparedStatement stmt = stmt(connection, query)) {
             int result = stmt.executeUpdate();
             stop(st);
             return result;

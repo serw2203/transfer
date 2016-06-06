@@ -57,8 +57,8 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
             this.params = Utils.NNE(params);
             return CommonQuery.instance(
                     "select c.client_id, hc.last_name, hc.first_name, hc.middle_name, hc.modify_date from aaa_client c\n" +
-                    "join aaa_h_client hc on c.client_id = hc.client_id and hc.cli_version = 0\n" +
-                    "where c.client_id = ?", this.params).createPreparedStatement(connection);
+                            "join aaa_h_client hc on c.client_id = hc.client_id and hc.cli_version = 0\n" +
+                            "where c.client_id = ?", this.params).createPreparedStatement(connection);
         }
 
         @Override
@@ -79,18 +79,21 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
 
     @Override
     public Client client(Jdbc jdbc, Long clientId) throws Exception {
-        return Utils.first(jdbc.executeQuery(new ClientDataQuery().withParams(Utils.NNE(clientId))));
+        return Utils.first(
+                jdbc.executeQuery(new ClientDataQuery().withParams(Utils.NNE(clientId))));
     }
 
     /*ACCOUNT*/
     @Override
     public List<Account> accounts(Jdbc jdbc, Long clientId) throws Exception {
-        return Utils.NNE(jdbc.executeQuery(new AccountByClient().withParams(Utils.NNE(clientId))));
+        return Utils.NNE(
+                jdbc.executeQuery(new AccountByClient().withParams(Utils.NNE(clientId))));
     }
 
     @Override
     public Account account(Jdbc jdbc, String accNum) throws Exception {
-        return Utils.first(jdbc.executeQuery(new AccountByNumber().withParams(Utils.NNE(accNum))));
+        return Utils.first(
+                jdbc.executeQuery(new AccountByNumber().withParams(Utils.NNE(accNum))));
     }
 
     /*RATE*/
@@ -125,7 +128,6 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
                 result.add(rate);
             }
             return result;
-
         }
     }
 
@@ -144,15 +146,14 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
         } else {
             List<Rate> list = jdbc.executeQuery(new RateDataQuery().withParams(sCur, tCur, dateRate));
             if (list.isEmpty()) {
-                Rate rate = Utils.first( jdbc.executeQuery(new RateDataQuery().withParams(tCur, sCur, dateRate)) );
+                Rate rate = Utils.first(jdbc.executeQuery(new RateDataQuery().withParams(tCur, sCur, dateRate)));
                 rate.setScurCode(sCur);
                 rate.setTcurCode(tCur);
-                rate.setRate( BigDecimal.ONE.divide(rate.getRate(), 8, BigDecimal.ROUND_HALF_UP) );
+                rate.setRate(BigDecimal.ONE.divide(rate.getRate(), 8, BigDecimal.ROUND_HALF_UP));
                 return rate;
             } else
                 return Utils.first(list);
         }
-
     }
 
     @Override
@@ -179,7 +180,6 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
     private static class BalanceDataQuery implements DataQuery<Balance> {
         private Object[] params;
         private boolean includeDate;
-
 
         public BalanceDataQuery withParams(String accNum, Timestamp date, boolean includeDate) {
             this.includeDate = includeDate;
@@ -217,12 +217,12 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
     }
 
     @Override
-    public List<Balance> balance(Jdbc jdbc, String accNum, Timestamp date, boolean includeDate ) throws Exception {
+    public List<Balance> balance(Jdbc jdbc, String accNum, Timestamp date, boolean includeDate) throws Exception {
         return jdbc.executeQuery(new BalanceDataQuery().withParams(accNum, date, includeDate));
     }
 
     @Override
-    public List<Balance> balance(Jdbc jdbc, String accNum, Timestamp date ) throws Exception {
+    public List<Balance> balance(Jdbc jdbc, String accNum, Timestamp date) throws Exception {
         return jdbc.executeQuery(new BalanceDataQuery().withParams(accNum, date, true));
     }
 
@@ -239,18 +239,21 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
         public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
             this.params = Utils.NNE(params);
             return CommonQuery.instance(
-                    "select o.oper_id, o.h_client_id, hc.client_id, hc.last_name, hc.first_name, hc.middle_name, o.oper_date, o.oper_type,\n" +
-                            "       s.d_amount - s.k_amount as amount, sa.acc_id, sa.acc_num, s.cur_code, s.turn_date,\n" +
-                            "       t.d_amount - t.k_amount as cor_amount, ta.acc_id as cor_acc_id, ta.acc_num as cor_acc_num, t.cur_code as cor_cur_code,\n" +
+                    "select x.oper_id, x.h_client_id, x.client_id, x.last_name, x.first_name, x.middle_name,\n" +
+                            "       x.oper_date, x.oper_type, x.amount, x.acc_id, x.acc_num, x.cur_code, x.turn_date,\n" +
+                            "       t.d_amount - t.k_amount as cor_amount, ta.acc_id as cor_acc_id,\n" +
+                            "       ta.acc_num as cor_acc_num, t.cur_code as cor_cur_code,\n" +
                             "       t.turn_date as cor_turn_date\n" +
-                            "from aaa_oper o\n" +
-                            "join aaa_h_client hc on hc.h_client_id = o.h_client_id\n" +
-                            "join aaa_turn s on o.oper_id = s.oper_id and o.oper_cur_code = s.cur_code\n" +
-                            "left join aaa_turn t on o.oper_id = t.oper_id and t.turn_id != s.turn_id\n" +
-                            "               and (o.oper_acc_id != t.acc_id or o.oper_cur_code != t.cur_code)\n" +
-                            "join aaa_account sa on sa.acc_id = s.acc_id\n" +
-                            "left join aaa_account ta on ta.acc_id = t.acc_id\n" +
-                            "where sa.acc_num = ? and o.oper_date between ? and ? order by o.oper_date desc", this.params)
+                            "from (\n" +
+                            "    select o.oper_id, o.h_client_id, hc.client_id, hc.last_name, hc.first_name, hc.middle_name, o.oper_date, o.oper_type,\n" +
+                            "           s.d_amount - s.k_amount as amount, sa.acc_id, sa.acc_num, s.cur_code, s.turn_date\n" +
+                            "    from aaa_oper o\n" +
+                            "    join aaa_h_client hc on hc.h_client_id = o.h_client_id \n" +
+                            "    join aaa_turn s on o.oper_id = s.oper_id and o.oper_acc_id = s.acc_id and o.oper_cur_code = s.cur_code\n" +
+                            "    join aaa_account sa on sa.acc_id = s.acc_id\n" +
+                            "    where sa.acc_num = ? and o.oper_date between ? and ? ) x\n" +
+                            "left join aaa_turn t on x.oper_id = t.oper_id and (x.acc_id != t.acc_id or x.cur_code != t.cur_code )\n" +
+                            "left join aaa_account ta on t.acc_id = ta.acc_id\n", this.params)
                     .createPreparedStatement(connection);
         }
 
@@ -258,26 +261,26 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
         public List<Extract> handle(ResultSet resultSet) throws Exception {
             List<Extract> result = new ArrayList<>();
             while (resultSet.next()) {
-                Extract ext = new Extract();
-                ext.setOperId(resultSet.getLong("OPER_ID"));
-                ext.setOperDate(resultSet.getTimestamp("OPER_DATE"));
-                ext.setOperType(resultSet.getString("OPER_TYPE"));
-                ext.setHClientId(resultSet.getLong("H_CLIENT_ID"));
-                ext.setClientId(resultSet.getLong("CLIENT_ID"));
-                ext.setLastName(resultSet.getString("LAST_NAME"));
-                ext.setFirstName(resultSet.getString("FIRST_NAME"));
-                ext.setMiddleName(resultSet.getString("MIDDLE_NAME"));
-                ext.setAccId(resultSet.getLong("ACC_ID"));
-                ext.setAccNum(resultSet.getString("ACC_NUM"));
-                ext.setCurCode(resultSet.getString("CUR_CODE"));
-                ext.setAmount(resultSet.getBigDecimal("AMOUNT"));
-                ext.setTurnDate(resultSet.getTimestamp("TURN_DATE"));
-                ext.setCorAccId(resultSet.getLong("COR_ACC_ID"));
-                ext.setCorAccNum(resultSet.getString("COR_ACC_NUM"));
-                ext.setCorCurCode(resultSet.getString("COR_CUR_CODE"));
-                ext.setCorAmount(resultSet.getBigDecimal("COR_AMOUNT"));
-                ext.setCorTurnDate(resultSet.getTimestamp("COR_TURN_DATE"));
-                result.add(ext);
+                Extract extract = new Extract();
+                extract.setOperId(resultSet.getLong("OPER_ID"));
+                extract.setOperDate(resultSet.getTimestamp("OPER_DATE"));
+                extract.setOperType(resultSet.getString("OPER_TYPE"));
+                extract.setHClientId(resultSet.getLong("H_CLIENT_ID"));
+                extract.setClientId(resultSet.getLong("CLIENT_ID"));
+                extract.setLastName(resultSet.getString("LAST_NAME"));
+                extract.setFirstName(resultSet.getString("FIRST_NAME"));
+                extract.setMiddleName(resultSet.getString("MIDDLE_NAME"));
+                extract.setAccId(resultSet.getLong("ACC_ID"));
+                extract.setAccNum(resultSet.getString("ACC_NUM"));
+                extract.setCurCode(resultSet.getString("CUR_CODE"));
+                extract.setAmount(resultSet.getBigDecimal("AMOUNT"));
+                extract.setTurnDate(resultSet.getTimestamp("TURN_DATE"));
+                extract.setCorAccId(resultSet.getLong("COR_ACC_ID"));
+                extract.setCorAccNum(resultSet.getString("COR_ACC_NUM"));
+                extract.setCorCurCode(resultSet.getString("COR_CUR_CODE"));
+                extract.setCorAmount(resultSet.getBigDecimal("COR_AMOUNT"));
+                extract.setCorTurnDate(resultSet.getTimestamp("COR_TURN_DATE"));
+                result.add(extract);
             }
             return result;
         }

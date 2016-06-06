@@ -17,8 +17,6 @@ public class DdlBatchQueries implements BatchQueries {
             "create table aaa_client ( " +
                     "client_id bigint primary key);",
 
-            "insert into aaa_client values (0);",
-
             "create table aaa_h_client ( " +
                     "h_client_id bigint default seq_id.nextval primary key, " +
                     "client_id bigint not null, " +
@@ -27,9 +25,6 @@ public class DdlBatchQueries implements BatchQueries {
                     "middle_name varchar(48), " +
                     "modify_date timestamp not null, " +
                     "cli_version int not null);",
-
-            "insert into aaa_h_client (h_client_id, client_id, last_name, modify_date, cli_version) " +
-                    "values (0, 0, '" + Config.OWNER + "', '1900-01-01 00:00:00.0', 0);",
 
             "alter table aaa_h_client add constraint f_h_client_on_client_client_id foreign key (client_id) " +
                     "references aaa_client (client_id);",
@@ -47,8 +42,6 @@ public class DdlBatchQueries implements BatchQueries {
 
             "alter table aaa_account add constraint f_account_on_client_client_id foreign key (client_id) " +
                     "references aaa_client (client_id);",
-
-            "insert into aaa_account values (0, 0, '" + Config.ACCOWNER + "');",
 
             "create table aaa_currency ( cur_code varchar(5) primary key);",
 
