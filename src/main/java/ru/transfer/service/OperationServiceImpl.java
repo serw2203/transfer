@@ -30,35 +30,6 @@ public class OperationServiceImpl implements OperationService {
         return operationDao.addAccount(new Jdbc(), account);
     }
 
-    @Override
-    public Extracts call(ComplexOper complexOper) throws Exception {
-        Extracts result = new Extracts();
-        Jdbc jdbc = new Jdbc();
-        jdbc.createTrans();
-        try {
-            Map<Descriptor, List<Operation>> map = smartOrder(complexOper);
-            for (Map.Entry<Descriptor, List<Operation>> item : map.entrySet()) {
-                for (Operation operation : item.getValue()) {
-                    result.getExtracts().add(operationDao.call(jdbc, operation));
-                }
-
-                //check current saldo by descriptor
-                Descriptor descriptor = item.getKey();
-                if (descriptor.needCheck) {
-                    if (analyticalDao.saldo(jdbc, descriptor.accNum, descriptor.curCode).compareTo(BigDecimal.ZERO) < 0) {
-                        throw new TransferAppException(String.format("Insufficient funds in the account '%s'", descriptor.accNum));
-                    }
-                }
-            }
-            jdbc.commitTrans();
-            return result;
-        } catch (Exception e) {
-            jdbc.rollbackTrans();
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
     private static class Descriptor {
         String accNum;
         String curCode;
@@ -87,21 +58,45 @@ public class OperationServiceImpl implements OperationService {
         }
     }
 
-    private Descriptor descriptor(Operation operation) {
-        Descriptor descriptor = new Descriptor();
-        descriptor.needCheck = operation instanceof OutputOperation || operation instanceof TransferOperation;
-        descriptor.accNum = operation.getAccount();
-        descriptor.curCode = operation.getCurrency();
-        descriptor.operDate = operation.getOperDate().getTime();
-        return descriptor;
+    @Override
+    public Extracts call(ComplexOper complexOper) throws Exception {
+        Extracts result = new Extracts();
+        Jdbc jdbc = new Jdbc();
+        jdbc.createTrans();
+        try {
+            //prepare
+            Map<Descriptor, List<Operation>> map = smartOrder(complexOper);
+            for (Map.Entry<Descriptor, List<Operation>> item : map.entrySet()) {
+                //call
+                for (Operation operation : item.getValue()) {
+                    result.getExtracts().add(operationDao.call(jdbc, operation));
+                }
+                //check current saldo
+                Descriptor descriptor = item.getKey();
+                if (descriptor.needCheck) {
+                    if (analyticalDao.saldo(jdbc, descriptor.accNum, descriptor.curCode).compareTo(BigDecimal.ZERO) < 0) {
+                        throw new TransferAppException(
+                                String.format("Insufficient funds in the account '%s'", descriptor.accNum));
+                    }
+                }
+            }
+            jdbc.commitTrans();
+            return result;
+        } catch (Exception e) {
+            jdbc.rollbackTrans();
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     private Map<Descriptor, List<Operation>> smartOrder(ComplexOper complexOper) {
         Map< Descriptor, List<Operation> > map = new TreeMap<>((Descriptor o1, Descriptor o2)->
                 ((o1.operDate > o2.operDate) ? 1 : (o1.operDate == o2.operDate) ? 0 : -1));
+
         for (Operation operation : complexOper.getOperations()) {
             Descriptor descriptor = descriptor(operation);
             List<Operation> list;
+
             if (map.containsKey(descriptor)) {
                 Descriptor key = Utils.valueFrom(descriptor, map.keySet());
                 key.needCheck = descriptor.needCheck || key.needCheck;
@@ -109,10 +104,20 @@ public class OperationServiceImpl implements OperationService {
             } else {
                 list = new ArrayList<>();
             }
+
             list.add(operation);
             map.put(descriptor, list);
         }
         return map;
+    }
+
+    private Descriptor descriptor(Operation operation) {
+        Descriptor descriptor = new Descriptor();
+        descriptor.needCheck = operation instanceof OutputOperation || operation instanceof TransferOperation;
+        descriptor.accNum = operation.getAccount();
+        descriptor.curCode = operation.getCurrency();
+        descriptor.operDate = operation.getOperDate().getTime();
+        return descriptor;
     }
 
 }

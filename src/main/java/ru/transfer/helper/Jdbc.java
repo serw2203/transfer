@@ -27,11 +27,11 @@ public class Jdbc {
         }
     }
 
-    private long start () {
+    private long start() {
         return System.currentTimeMillis();
     }
 
-    private void stop (long start) {
+    private void stop(long start) {
         log.trace("Elapsed time - {} s <---", (System.currentTimeMillis() - start) / 1000.0);
     }
 
@@ -98,12 +98,6 @@ public class Jdbc {
         }
     }
 
-    /**
-     * @param sql
-     * @param params
-     * @return
-     * @throws Exception
-     */
     public List<Map<String, ?>> executeQuery(String sql, Object[] params) throws Exception {
         long st = start();
         try (
@@ -127,20 +121,10 @@ public class Jdbc {
         }
     }
 
-    /**
-     * @param sql
-     * @return
-     * @throws Exception
-     */
     public List<Map<String, ?>> executeQuery(String sql) throws Exception {
         return executeQuery(sql, null);
     }
 
-    /**
-     * @param query
-     * @return
-     * @throws Exception
-     */
     public <T> List<T> executeQuery(DataQuery<T> query) throws Exception {
         long st = start();
         try (
@@ -154,12 +138,6 @@ public class Jdbc {
         }
     }
 
-    /**
-     * @param sql
-     * @param params
-     * @return
-     * @throws Exception
-     */
     public int executeUpdate(String sql, Object[] params) throws Exception {
         long st = start();
         try (
@@ -173,11 +151,6 @@ public class Jdbc {
         }
     }
 
-    /**
-     * @param query
-     * @return
-     * @throws Exception
-     */
     public int executeUpdate(UpdateQuery query) throws Exception {
         long st = start();
         try (
@@ -191,11 +164,6 @@ public class Jdbc {
         }
     }
 
-    /**
-     * @param query
-     * @return
-     * @throws Exception
-     */
     public int[] executeBatch(BatchQueries query) throws Exception {
         try (
                 Connection connection = conn();

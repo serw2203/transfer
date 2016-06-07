@@ -114,9 +114,9 @@ public class AppTest extends Assert {
                     "select c1.cur_code as scur_code, c2.cur_code as tcur_code from aaa_currency c1\n" +
                             "join aaa_currency c2 on c1.cur_code != c2.cur_code").createPreparedStatement(connection);
         }
-
     }
 
+    @Ignore
     @Test
     public void checkCurrencyRate() {
         try {
