@@ -55,6 +55,7 @@ public class OperationDaoImpl implements OperationDao {
         extract.setCurCode(Utils.NNE(curCode, "Currency code must to be not null"));
 
         Object corAccId = map.get("COR_ACC_ID");
+
         if (corAccId != null) {
             Rate rate = analyticalDao.rate(jdbc, curCode, Utils.NNE(corCurCode, "Mail currency code must to be not null"), operDate);
             extract.setCorAccId((Long) corAccId);
@@ -190,7 +191,7 @@ public class OperationDaoImpl implements OperationDao {
             turn.creditAccId = 0L;
         } else
         if (OUTPUT.equals(extract.getOperType())) {
-            turn.debitAccId=0L;
+            turn.debitAccId = 0L;
             turn.creditAccId=extract.getAccId();
             turn.creditCur=extract.getCurCode();
             turn.creditAmount=extract.getAmount();
