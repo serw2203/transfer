@@ -67,7 +67,7 @@ public class OperationDaoImpl implements OperationDao {
         }
 
         if (jdbc.executeUpdate(
-                "insert into aaa_oper (oper_id, h_client_id, oper_date, oper_type, oper_acc_id, oper_cur_code)\n" +
+                "insert into aaa_oper (oper_id, h_client_id, oper_date, oper_type, acc_id, cur_code)\n" +
                         "values (?, ?, ?, ?, ?, ?)", new Object[]{
                         extract.getOperId(),
                         extract.getHClientId(),

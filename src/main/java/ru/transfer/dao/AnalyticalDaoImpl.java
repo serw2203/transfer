@@ -260,7 +260,7 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
                             "           s.d_amount - s.k_amount as amount, sa.acc_id, sa.acc_num, s.cur_code, s.turn_date\n" +
                             "    from aaa_oper o\n" +
                             "    join aaa_h_client hc on hc.h_client_id = o.h_client_id \n" +
-                            "    join aaa_turn s on o.oper_id = s.oper_id and o.oper_acc_id = s.acc_id and o.oper_cur_code = s.cur_code\n" +
+                            "    join aaa_turn s on o.oper_id = s.oper_id and o.acc_id = s.acc_id and o.cur_code = s.cur_code\n" +
                             "    join aaa_account sa on sa.acc_id = s.acc_id\n" +
                             "    where sa.acc_num = ? and o.oper_date between ? and ? ) x\n" +
                             "left join aaa_turn t on x.oper_id = t.oper_id and (x.acc_id != t.acc_id or x.cur_code != t.cur_code )\n" +

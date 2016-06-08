@@ -65,8 +65,8 @@ public class DdlBatchQueries implements BatchQueries {
                     "h_client_id  bigint not null, " +
                     "oper_date timestamp not null, " +
                     "oper_type varchar(12) not null, " +
-                    "oper_acc_id bigint not null, " +
-                    "oper_cur_code varchar(5) not null);",
+                    "acc_id bigint not null, " +
+                    "cur_code varchar(5) not null);",
 
             "alter table aaa_oper add constraint f_oper_on_oper_type_oper_type foreign key (oper_type) " +
                     "references aaa_oper_type (oper_type);",
@@ -74,10 +74,10 @@ public class DdlBatchQueries implements BatchQueries {
             "alter table aaa_oper add constraint f_oper_on_h_client_h_client_id foreign key (h_client_id) " +
                     "references aaa_h_client (h_client_id);",
 
-            "alter table aaa_oper add constraint f_oper_on_acc_oper_acc_id foreign key (oper_acc_id) " +
+            "alter table aaa_oper add constraint f_oper_on_acc_acc_id foreign key (acc_id) " +
                     "references aaa_account (acc_id);",
 
-            "alter table aaa_oper add constraint f_oper_on_curr_oper_cur_code foreign key (oper_cur_code) " +
+            "alter table aaa_oper add constraint f_oper_on_curr_cur_code foreign key (cur_code) " +
                     "references aaa_currency (cur_code);",
 
             "create index ix_oper_date on aaa_oper (oper_date desc);",
