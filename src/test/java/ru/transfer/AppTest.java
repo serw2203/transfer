@@ -21,10 +21,8 @@ import ru.transfer.util.Utils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  *
@@ -171,34 +169,82 @@ public class AppTest extends Assert {
     }
 
     @Test
-    public void checkValidIO() {
+    public void checkIO() {
         try {
-            ComplexOper complexOper = new ComplexOper();
+            Timestamp iDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000");
+            Timestamp oDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000");
 
+            ComplexOper complexOper = new ComplexOper();
             OutputOperation output = new OutputOperation();
             output.setAccount("ACC00001");
-            output.setAmount(new BigDecimal("90.00"));
+            output.setAmount(new BigDecimal("99.00"));
             output.setCurrency("RUB");
-            output.setOperDate(Utils.dateTimeToTimestamp("2006-01-01T10:00:01+0000"));
+            output.setOperDate(oDate);
             complexOper.getOperations().add(output);
-
             InputOperation input = new InputOperation();
             input.setAmount(new BigDecimal("100.00"));
             input.setAccount("ACC00001");
             input.setCurrency("RUB");
-            input.setOperDate(Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000"));
+            input.setOperDate(iDate);
             complexOper.getOperations().add(input);
+            operation.call(complexOper);
+            assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(BigDecimal.ONE), 0);
+            ExtractRoot extract = analytical.extracts("ACC00001", iDate, oDate);
+            assertEquals(extract.getExtracts().size(), 2);
+            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ONE), 0);
 
-            InputOperation input1 = new InputOperation();
-            input1.setAmount(new BigDecimal("10.00"));
-            input1.setAccount("ACC00001");
-            input1.setCurrency("RUB");
-            input1.setOperDate(Utils.dateTimeToTimestamp("2006-01-01T11:01:00+0000"));
-            complexOper.getOperations().add(input1);
+            iDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000");
+            oDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:01+0000");
+            input.setOperDate(iDate);
+            output.setOperDate(oDate);
 
             operation.call(complexOper);
+            assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(new BigDecimal("2")), 0);
+            extract = analytical.extracts("ACC00001", iDate, oDate);
+            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(new BigDecimal("2")), 0);
 
-            assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(new BigDecimal("20")), 0);
+            Timestamp tDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000");
+            complexOper.getOperations().clear();
+            TransferOperation transfer = new TransferOperation();
+            transfer.setAccount("ACC00001");
+            transfer.setCurrency("RUB");
+            transfer.setOperDate(tDate);
+            transfer.setAmount(BigDecimal.ONE);
+            transfer.setDestAccount("ACC00002");
+            transfer.setDestCurrency("RUB");
+            complexOper.getOperations().add(transfer);
+            operation.call(complexOper);
+            assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(BigDecimal.ONE), 0);
+            extract = analytical.extracts("ACC00001", iDate, oDate);
+            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ONE), 0);
+            assertEquals(analytical.saldo("ACC00002", "RUB").compareTo(BigDecimal.ONE), 0);
+            extract = analytical.extracts("ACC00002", iDate, oDate);
+            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ONE), 0);
+
+
+            tDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:02+0000");
+            transfer.setOperDate(tDate);
+            operation.call(complexOper);
+            assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(analytical.saldo("ACC00002", "RUB").compareTo(new BigDecimal("2")), 0);
+
+            extract = analytical.extracts("ACC00001", iDate, oDate);
+            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ONE), 0);
+            extract = analytical.extracts("ACC00001", iDate, tDate);
+            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            extract = analytical.extracts("ACC00002", iDate, oDate);
+            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ONE), 0);
+            extract = analytical.extracts("ACC00002", iDate, tDate);
+            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(new BigDecimal("2")), 0);
+
         } catch (Exception e) {
             e.printStackTrace();
             assert false;
