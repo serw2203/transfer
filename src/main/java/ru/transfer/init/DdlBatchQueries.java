@@ -1,6 +1,5 @@
 package ru.transfer.init;
 
-import ru.transfer.conf.Config;
 import ru.transfer.query.BatchQueries;
 
 import java.sql.Connection;

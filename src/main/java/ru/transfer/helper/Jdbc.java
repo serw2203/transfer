@@ -21,7 +21,7 @@ public class Jdbc {
     private long trst;
     private Connection connection = null;
 
-    private void check() {
+    private void checkTrans() {
         if (this.connection == null) {
             throw new IllegalStateException("Transaction is not initialized");
         }
@@ -67,7 +67,7 @@ public class Jdbc {
     }
 
     public void commitTrans() throws Exception {
-        check();
+        checkTrans();
         try {
             log.trace("COMMIT TRANS *********************** Elapsed time - {} s",
                     (System.currentTimeMillis() - this.trst) / 1000.0);
@@ -78,7 +78,7 @@ public class Jdbc {
     }
 
     public void rollbackTrans() throws Exception {
-        check();
+        checkTrans();
         try {
             log.trace("ROLLBACK TRANS *********************** Elapsed time - {} s",
                     (System.currentTimeMillis() - this.trst) / 1000.0);
@@ -88,8 +88,7 @@ public class Jdbc {
         }
     }
 
-    protected void releaseTrans() throws Exception {
-        check();
+    private void releaseTrans() throws Exception {
         try {
             this.connection.setAutoCommit(true);
         } finally {
@@ -98,14 +97,14 @@ public class Jdbc {
         }
     }
 
-    public List<Map<String, ?>> executeQuery(String sql, Object[] params) throws Exception {
+    public List<Map<String, Object>> executeQuery(String sql, Object[] params) throws Exception {
         long st = start();
         try (
                 Connection conn = conn();
                 PreparedStatement stmt = stmt(conn, sql, params);
-                ResultSet resultSet = stmt.executeQuery();
+                ResultSet resultSet = stmt.executeQuery()
         ) {
-            List<Map<String, ?>> result = new ArrayList();
+            List<Map<String, Object>> result = new ArrayList();
             while (resultSet.next()) {
                 Map<String, Object> row = new HashMap<>();
                 int colCount = resultSet.getMetaData().getColumnCount();
@@ -116,12 +115,10 @@ public class Jdbc {
             }
             stop(st);
             return result;
-        } catch (Exception e) {
-            throw e;
         }
     }
 
-    public List<Map<String, ?>> executeQuery(String sql) throws Exception {
+    public  List<Map<String, Object>> executeQuery(String sql) throws Exception {
         return executeQuery(sql, null);
     }
 
@@ -133,8 +130,6 @@ public class Jdbc {
                 ResultSet resultSet = stmt.executeQuery()) {
             stop(st);
             return query.handle(resultSet);
-        } catch (Exception e) {
-            throw e;
         }
     }
 
@@ -146,8 +141,6 @@ public class Jdbc {
             int result = stmt.executeUpdate();
             stop(st);
             return result;
-        } catch (Exception e) {
-            throw e;
         }
     }
 
@@ -159,8 +152,6 @@ public class Jdbc {
             int result = stmt.executeUpdate();
             stop(st);
             return result;
-        } catch (Exception e) {
-            throw e;
         }
     }
 
@@ -169,8 +160,6 @@ public class Jdbc {
                 Connection connection = conn();
                 Statement stmt = stmt(connection, query)) {
             return stmt.executeBatch();
-        } catch (Exception e) {
-            throw e;
         }
     }
 }

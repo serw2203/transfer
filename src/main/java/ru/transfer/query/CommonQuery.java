@@ -2,7 +2,12 @@ package ru.transfer.query;
 
 import ru.transfer.util.Utils;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -11,7 +16,7 @@ public class CommonQuery implements Query {
     private String sql;
     private Object[] params;
 
-    protected CommonQuery() {
+    private CommonQuery() {
     }
 
     public static CommonQuery instance(String sql, Object[] params) {
@@ -28,15 +33,21 @@ public class CommonQuery implements Query {
 
     @Override
     public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
-        PreparedStatement stmt = connection.prepareStatement(this.sql);
+        final PreparedStatement stmt = connection.prepareStatement(this.sql);
+        final AtomicInteger i = new AtomicInteger(1);
         if (this.params != null) {
-            for (int i = 0; i < this.params.length; i++) {
-                if (this.params[i] != null) {
-                    stmt.setObject(i + 1, this.params[i]);
-                } else {
-                    stmt.setNull(i + 1, Types.NULL);
+            Arrays.stream(this.params).forEach(param -> {
+                try {
+                    if (param != null) {
+                        stmt.setObject(i.get(), param);
+                    } else {
+                        stmt.setNull(i.get(), Types.NULL);
+                    }
+                    i.set(i.get() + 1);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-            }
+            });
         }
         return stmt;
     }

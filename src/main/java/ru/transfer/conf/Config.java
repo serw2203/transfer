@@ -7,8 +7,6 @@ import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.transfer.face.AnalyticalFace;
 import ru.transfer.face.OperationFace;
 import ru.transfer.helper.Jdbc;
@@ -31,9 +29,7 @@ import java.util.TimeZone;
  */
 @SuppressWarnings("unchecked")
 public class Config {
-    private static Logger log = LoggerFactory.getLogger(Config.class);
-
-    public final static String SFMT = "yyyy-MM-dd'T'HH:mm:ssZ";
+    private final static String SFMT = "yyyy-MM-dd'T'HH:mm:ssZ";
 
     private static class TimestampParamConverter implements ParamConverter<Timestamp> {
         @Override
@@ -70,7 +66,7 @@ public class Config {
     public static void config (JAXRSServerFactoryBean serverFactory) {
         TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
         serverFactory.setAddress("http://0.0.0.0:9000/");
-        serverFactory.setServiceBeans(Arrays.asList(new Object[]{new AnalyticalFace(), new OperationFace()}));
+        serverFactory.setServiceBeans(Arrays.asList(new AnalyticalFace(), new OperationFace()));
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonSerialize.Inclusion.NON_EMPTY);
         mapper.configure(SerializationConfig.Feature.WRITE_NULL_MAP_VALUES, false);
@@ -81,7 +77,7 @@ public class Config {
         mapper.setDeserializationConfig(deserializationConfig.withDateFormat(Config.dateFmt()));
         JacksonJsonProvider provider = new JacksonJsonProvider();
         provider.setMapper(mapper);
-        serverFactory.setProviders(Arrays.asList(new Object[]{provider, new ParamConverterProviderImpl()}));
+        serverFactory.setProviders(Arrays.asList(provider, new ParamConverterProviderImpl()));
         Map maps = new HashMap();
         maps.put("json", "application/json");
         serverFactory.setExtensionMappings(maps);
@@ -91,7 +87,6 @@ public class Config {
         if ( server.isStarted() ) {
             Jdbc jdbc = new Jdbc();
             try {
-                long st = System.currentTimeMillis();
                 jdbc.executeBatch(new DdlBatchQueries());
             } catch (Exception e) {
                 throw new RuntimeException(e);

@@ -1,14 +1,12 @@
 package ru.transfer;
 
-import org.junit.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import ru.transfer.dao.OperationDaoImpl;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import ru.transfer.helper.Jdbc;
-import ru.transfer.init.ClientAccountBatchQueries;
 import ru.transfer.init.CrossRateBatchQueries;
 import ru.transfer.init.DdlBatchQueries;
-import ru.transfer.init.OperationBatchQueries;
 import ru.transfer.model.*;
 import ru.transfer.query.CommonQuery;
 import ru.transfer.query.DataQuery;
@@ -19,16 +17,15 @@ import ru.transfer.service.OperationServiceImpl;
 import ru.transfer.util.Utils;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.*;
-import java.util.*;
-import java.util.stream.IntStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TimeZone;
 
 /**
  *
  */
 public class AppTest extends Assert {
-    private static Logger log = LoggerFactory.getLogger(AppTest.class);
 
     private final AnalyticalService analytical = new AnalyticalServiceImpl();
 
@@ -76,19 +73,19 @@ public class AppTest extends Assert {
         private String sCurCode;
         private String tCurCode;
 
-        public String getsCurCode() {
+        String getsCurCode() {
             return sCurCode;
         }
 
-        public void setsCurCode(String sCurCode) {
+        void setsCurCode(String sCurCode) {
             this.sCurCode = sCurCode;
         }
 
-        public String gettCurCode() {
+        String gettCurCode() {
             return tCurCode;
         }
 
-        public void settCurCode(String tCurCode) {
+        void settCurCode(String tCurCode) {
             this.tCurCode = tCurCode;
         }
     }

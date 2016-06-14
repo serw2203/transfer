@@ -14,10 +14,11 @@ import java.io.Writer;
 import java.lang.reflect.Array;
 import java.sql.Timestamp;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -26,36 +27,33 @@ import java.util.Set;
 public class Utils {
     private final static Logger log = LoggerFactory.getLogger(Utils.class);
 
-    private static String arrayToString(Object[] array) {
+    //todo : make private
+    public static String arrayToString(Object[] array) {
         if (array != null) {
             final Writer result = new StringWriter();
             final PrintWriter printWriter = new PrintWriter(result);
             printWriter.write("{");
-            int lastIx = array.length - 1;
-            for (int i = 0; i < lastIx; i++) {
-                printWriter.write((array[i] == null ? "null" : array[i].toString()) + ", ");
-            }
-            if (lastIx >= 0)
-                printWriter.write(array[lastIx] == null ? "null" : array[lastIx].toString());
+            printWriter.write(
+                    Arrays.stream(array)
+                            .map(it -> it == null ? "null" : it.toString())
+                            .collect(Collectors.joining(", ")));
             printWriter.write("}");
             return result.toString();
-        }
-        return "null";
+        } else
+            return null;
     }
 
     private static String stackTraceToString(Exception e) {
-        e = NNE(e);
         final Writer result = new StringWriter();
         final PrintWriter printWriter = new PrintWriter(result);
         e.printStackTrace(printWriter);
         return result.toString();
     }
 
-    public static <T> boolean isFilled(T o) {
+    private static <T> boolean isFilled(T o) {
         if (o == null) {
             return false;
-        }
-        if (o instanceof CharSequence) {
+        } else if (o instanceof CharSequence) {
             return ((CharSequence) o).length() != 0;
         } else if (o instanceof Collection) {
             return !((Collection) o).isEmpty();
@@ -67,19 +65,19 @@ public class Utils {
         return true;
     }
 
-    public static <T> T first(Collection<T> list) {
-        if (list.size() == 1) {
-            return list.iterator().next();
-        } else {
-            throw new IllegalStateException(String.format("Invalid result : found %d elements", list.size()));
-        }
+    public static <T> T first(Collection<T> collection) {
+        if (!collection.isEmpty()) {
+            return collection.iterator().next();
+        } else
+            throw new IllegalStateException(
+                    String.format("Invalid result : found %d elements", collection.size()));
     }
 
     public static <T> T NNE(Object obj, String message) {
         if (obj != null && isFilled(obj)) {
             return (T) obj;
-        }
-        throw new IllegalStateException(message);
+        } else
+            throw new IllegalStateException(message);
     }
 
     public static <T> T NNE(Object obj) {
@@ -95,15 +93,9 @@ public class Utils {
         }
     }
 
-    public static <T> T valueFrom (T obj, Set<T> set) {
-        Iterator<T> it = set.iterator();
-        while (it.hasNext()) {
-          T r = it.next();
-          if ( r.equals(obj) ) {
-              return r;
-          }
-        }
-        throw new RuntimeException("Object not found");
+    public static <T> T valueFrom(T obj, Set<T> set) {
+        return set.stream().filter(it -> it.equals(obj)).findAny()
+                .orElseThrow(() -> new RuntimeException(String.format("Object '%s' not found", obj)));
     }
 
     /*using in bindind.xjb*/

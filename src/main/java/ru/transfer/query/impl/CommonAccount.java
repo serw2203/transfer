@@ -3,7 +3,6 @@ package ru.transfer.query.impl;
 import ru.transfer.model.Account;
 import ru.transfer.query.DataQuery;
 
-import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;

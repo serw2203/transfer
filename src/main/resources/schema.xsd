@@ -13,96 +13,96 @@
 
     <xs:complexType name="error">
         <xs:sequence>
-            <xs:element name="error" type="xs:string" nillable="true"></xs:element>
-            <xs:element name="type" type="trans:errorType"></xs:element>
-            <xs:element name="stackTrace" type="xs:string" nillable="true"></xs:element>
+            <xs:element name="error" type="xs:string" nillable="true"/>
+            <xs:element name="type" type="trans:errorType"/>
+            <xs:element name="stackTrace" type="xs:string" nillable="true"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="currency">
         <xs:sequence>
-            <xs:element name="code" type="xs:string"></xs:element>
+            <xs:element name="code" type="xs:string"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="currencyRoot">
         <xs:sequence>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="currencies" type="trans:currency"></xs:element>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="currencies" type="trans:currency"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="client">
         <xs:sequence>
-            <xs:element minOccurs="0" name="clientId" type="xs:long"></xs:element>
-            <xs:element name="lastName" type="xs:string"></xs:element>
-            <xs:element minOccurs="0" maxOccurs="1" name="firstName" type="xs:string"></xs:element>
-            <xs:element minOccurs="0" maxOccurs="1" name="middleName" type="xs:string"></xs:element>
-            <xs:element minOccurs="0" name="modifyDate" type="xs:dateTime"></xs:element>
+            <xs:element minOccurs="0" name="clientId" type="xs:long"/>
+            <xs:element name="lastName" type="xs:string"/>
+            <xs:element minOccurs="0" maxOccurs="1" name="firstName" type="xs:string"/>
+            <xs:element minOccurs="0" maxOccurs="1" name="middleName" type="xs:string"/>
+            <xs:element minOccurs="0" name="modifyDate" type="xs:dateTime"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="account">
         <xs:sequence>
-            <xs:element minOccurs="0" name="accId" type="xs:long"></xs:element>
-            <xs:element name="clientId" type="xs:long"></xs:element>
-            <xs:element name="accNum" type="xs:string"></xs:element>
+            <xs:element minOccurs="0" name="accId" type="xs:long"/>
+            <xs:element name="clientId" type="xs:long"/>
+            <xs:element name="accNum" type="xs:string"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="accountRoot">
         <xs:sequence>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="accounts" type="trans:account"></xs:element>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="accounts" type="trans:account"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="rateRoot">
         <xs:sequence>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="rates" type="trans:rate"></xs:element>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="rates" type="trans:rate"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="rate">
         <xs:sequence>
-            <xs:element name="scurCode" type="xs:string"></xs:element>
-            <xs:element name="tcurCode" type="xs:string"></xs:element>
-            <xs:element name="dateRate" type="xs:dateTime"></xs:element>
-            <xs:element name="rate" type="xs:decimal"></xs:element>
+            <xs:element name="scurCode" type="xs:string"/>
+            <xs:element name="tcurCode" type="xs:string"/>
+            <xs:element name="dateRate" type="xs:dateTime"/>
+            <xs:element name="rate" type="xs:decimal"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="balanceRoot">
         <xs:sequence>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="balances" type="trans:balance"></xs:element>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="balances" type="trans:balance"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="balance">
         <xs:sequence>
-            <xs:element name="accId" type="xs:long"></xs:element>
-            <xs:element name="accNum" type="xs:string"></xs:element>
-            <xs:element name="curCode" type="xs:string"></xs:element>
-            <xs:element name="balance" type="xs:decimal"></xs:element>
-            <xs:element name="balanceDate" type="xs:dateTime"></xs:element>
+            <xs:element name="accId" type="xs:long"/>
+            <xs:element name="accNum" type="xs:string"/>
+            <xs:element name="curCode" type="xs:string"/>
+            <xs:element name="balance" type="xs:decimal"/>
+            <xs:element name="balanceDate" type="xs:dateTime"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="extractRoot">
         <xs:sequence>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="input" type="trans:balance"></xs:element>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="output" type="trans:balance"></xs:element>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="extracts" type="trans:extract"></xs:element>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="input" type="trans:balance"/>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="output" type="trans:balance"/>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="extracts" type="trans:extract"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="extracts">
         <xs:sequence>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="extracts" type="trans:extract"></xs:element>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="extracts" type="trans:extract"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="extract">
         <xs:sequence>
-            <xs:element name="operId" type="xs:long"></xs:element>
+            <xs:element name="operId" type="xs:long"/>
             <xs:element name="operDate" type="xs:dateTime">
                 <xs:annotation>
                     <xs:documentation xml:lang="en">Operation date</xs:documentation>
@@ -188,16 +188,16 @@
 
     <xs:complexType name="complexOper">
         <xs:sequence>
-            <xs:element minOccurs="1" maxOccurs="unbounded" name="operations" type="trans:operation"></xs:element>
+            <xs:element minOccurs="1" maxOccurs="unbounded" name="operations" type="trans:operation"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="operation">
         <xs:sequence>
-            <xs:element name="operDate" type="xs:dateTime"></xs:element>
-            <xs:element name="currency" type="xs:string"></xs:element>
-            <xs:element name="account" type="xs:string"></xs:element>
-            <xs:element name="amount" type="xs:decimal"></xs:element>
+            <xs:element name="operDate" type="xs:dateTime"/>
+            <xs:element name="currency" type="xs:string"/>
+            <xs:element name="account" type="xs:string"/>
+            <xs:element name="amount" type="xs:decimal"/>
         </xs:sequence>
     </xs:complexType>
 
@@ -219,8 +219,8 @@
         <xs:complexContent>
             <xs:extension base="trans:operation">
                 <xs:sequence>
-                    <xs:element name="destAccount" type="xs:string"></xs:element>
-                    <xs:element name="destCurrency" type="xs:string"></xs:element>
+                    <xs:element name="destAccount" type="xs:string"/>
+                    <xs:element name="destCurrency" type="xs:string"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

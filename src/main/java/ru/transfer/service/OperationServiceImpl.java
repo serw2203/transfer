@@ -40,12 +40,8 @@ public class OperationServiceImpl implements OperationService {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-
             Descriptor that = (Descriptor) o;
-
-            if (operDate != that.operDate) return false;
-            if (!accNum.equals(that.accNum)) return false;
-            return curCode.equals(that.curCode);
+            return operDate == that.operDate && accNum.equals(that.accNum) && curCode.equals(that.curCode);
 
         }
 
@@ -56,6 +52,11 @@ public class OperationServiceImpl implements OperationService {
             result = 31 * result + (int) (operDate ^ (operDate >>> 32));
             return result;
         }
+    }
+
+    @Override
+    public Extract call(Operation operation) throws Exception {
+        return operationDao.call(new Jdbc(), operation);
     }
 
     @Override
@@ -84,7 +85,6 @@ public class OperationServiceImpl implements OperationService {
             return result;
         } catch (Exception e) {
             jdbc.rollbackTrans();
-            e.printStackTrace();
             throw e;
         }
     }
@@ -93,7 +93,7 @@ public class OperationServiceImpl implements OperationService {
         Map< Descriptor, List<Operation> > map = new TreeMap<>((Descriptor o1, Descriptor o2)->
                 ((o1.operDate > o2.operDate) ? 1 : (o1.operDate == o2.operDate) ? 0 : -1));
 
-        for (Operation operation : complexOper.getOperations()) {
+        complexOper.getOperations().forEach(operation -> {
             Descriptor descriptor = descriptor(operation);
             List<Operation> list;
 
@@ -107,7 +107,7 @@ public class OperationServiceImpl implements OperationService {
 
             list.add(operation);
             map.put(descriptor, list);
-        }
+        });
         return map;
     }
 

@@ -32,11 +32,6 @@ public class ConnectionHelper {
         }
     }
 
-    /**
-     *
-     * @return
-     * @throws Exception
-     */
     public static Connection connection() throws Exception {
         return cpds.getConnection();
     }

@@ -32,7 +32,7 @@ public class OperationDaoImpl implements OperationDao {
                               Timestamp operDate, String operType, String accNum, String curCode, BigDecimal amount,
                               String corAccNum, String corCurCode) throws Exception {
 
-        Map<String, ?> map = Utils.first(jdbc.executeQuery(
+        Map<String, Object> map = Utils.first(jdbc.executeQuery(
                 "select top 1 hc.h_client_id, a.client_id, a.acc_id, ta.acc_id as cor_acc_id, " +
                         "hc.last_name, hc.first_name, hc.middle_name from aaa_account a\n" +
                         "join aaa_h_client hc on hc.client_id = a.client_id and a.acc_num = ?\n" +
@@ -126,8 +126,8 @@ public class OperationDaoImpl implements OperationDao {
     private static class TurnUpdateQuery implements UpdateQuery {
         private Object[] params;
 
-        public TurnUpdateQuery withParams(Long operId, Long accId, String curCode,
-                                          BigDecimal debitAmount, BigDecimal creditAmount, Timestamp turnDate) {
+        TurnUpdateQuery withParams(Long operId, Long accId, String curCode,
+                                   BigDecimal debitAmount, BigDecimal creditAmount, Timestamp turnDate) {
             this.params = new Object[]{
                     Utils.NNE(operId),
                     Utils.NNE(accId),
@@ -162,15 +162,17 @@ public class OperationDaoImpl implements OperationDao {
     }
     
     private void turn(Jdbc jdbc, Turn turn) throws Exception {
-        if (turn.debitAccId.longValue() != 0L) {
+        if (turn.debitAccId.compareTo(0L) != 0) {
             if (jdbc.executeUpdate(new TurnUpdateQuery().withParams(turn.operId,
                     turn.debitAccId,
                     turn.debitCur,
                     turn.debitAmount,
                     BigDecimal.ZERO,
-                    turn.turnDate)) != 1) throw new RuntimeException("Insert turns failed");
+                    turn.turnDate)) != 1) {
+                throw new RuntimeException("Insert turns failed");
+            }
         }
-        if (turn.creditAccId.longValue() != 0L) {
+        if (turn.creditAccId.compareTo(0L) != 0) {
             if (jdbc.executeUpdate(new TurnUpdateQuery().withParams(turn.operId,
                     turn.creditAccId,
                     turn.creditCur,
@@ -243,7 +245,7 @@ public class OperationDaoImpl implements OperationDao {
                             Utils.NNE(client.getLastName(), "Last name must to be not null"),
                             client.getFirstName(),
                             client.getMiddleName(),
-                            client.getModifyDate(),
+                            Utils.NNE(client.getModifyDate()),
                             0
                     }) != 1) {
                 throw new RuntimeException("Client's history insert failed");

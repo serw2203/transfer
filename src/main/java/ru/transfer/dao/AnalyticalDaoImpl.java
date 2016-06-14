@@ -48,7 +48,7 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
     private static class ClientDataQuery implements DataQuery<Client> {
         private Long[] params;
 
-        public ClientDataQuery withParams(Long clientId) {
+        ClientDataQuery withParams(Long clientId) {
             this.params = new Long[]{Utils.NNE(clientId)};
             return this;
         }
@@ -101,7 +101,7 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
     private static class RateDataQuery implements DataQuery<Rate> {
         private Object[] params;
 
-        public RateDataQuery withParams(String sCur, String tCur, Timestamp dateRate) {
+        RateDataQuery withParams(String sCur, String tCur, Timestamp dateRate) {
             if (dateRate == null)
                 dateRate = new Timestamp(System.currentTimeMillis());
             this.params = new Object[]{Utils.NNE(sCur), Utils.NNE(tCur), dateRate};
@@ -159,15 +159,22 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
 
     @Override
     public List<Rate> rates(Jdbc jdbc, Timestamp dateRate) throws Exception {
-        List<Rate> result = new ArrayList<>();
+        final List<Rate> result = new ArrayList<>();
         jdbc.createTrans();
         try {
-            List<Map<String, ?>> rows = jdbc.executeQuery(
+            jdbc.executeQuery(
                     "select s.cur_code as scur_code, t.cur_code as tcur_code from aaa_currency s " +
-                            "join aaa_currency t on s.cur_code != t.cur_code");
-            for (Map<String, ?> row : rows) {
-                result.add(rate(jdbc, Utils.NNE(row.get("SCUR_CODE")), Utils.NNE(row.get("TCUR_CODE")), Utils.NNE(dateRate)));
-            }
+                            "join aaa_currency t on s.cur_code != t.cur_code")
+                    .forEach(row -> {
+                        try {
+                            result.add( rate( jdbc,
+                                    Utils.NNE(row.get("SCUR_CODE")),
+                                    Utils.NNE(row.get("TCUR_CODE")),
+                                    Utils.NNE(dateRate) ));
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
             jdbc.commitTrans();
         } catch (Exception e) {
             jdbc.rollbackTrans();
@@ -182,7 +189,7 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
         private Object[] params;
         private boolean includeDate;
 
-        public BalanceDataQuery withParams(String accNum, Timestamp date, boolean includeDate) {
+        BalanceDataQuery withParams(String accNum, Timestamp date, boolean includeDate) {
             this.includeDate = includeDate;
             this.params = new Object[]{Utils.NNE(date), Utils.NNE(accNum)};
             return this;
@@ -219,12 +226,12 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
 
     @Override
     public BigDecimal saldo(Jdbc jdbc, String accNum, String curCode) throws Exception {
-        return Utils.NNE(Utils.first(jdbc.executeQuery(
+        return (BigDecimal) Utils.first(jdbc.executeQuery(
                 "select coalesce(b.balance, 0) as balance from\n" +
                         "(select cast(?  as varchar(20)) as acc_num, cast(? as varchar(5)) as cur_code) x\n" +
                         "left join aaa_account a on a.acc_num = x.acc_num\n" +
                         "left join aaa_balance b on a.acc_id = b.acc_id and x.cur_code = b.cur_code",
-                new Object[]{accNum, curCode})).get("BALANCE"));
+                new Object[]{accNum, curCode})).get("BALANCE");
     }
 
     @Override
@@ -241,7 +248,7 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
     private static class ExtractDataQuery implements DataQuery<Extract> {
         private Object[] params;
 
-        public ExtractDataQuery withParams(String accNum, Timestamp startDate, Timestamp stopDate) {
+        ExtractDataQuery withParams(String accNum, Timestamp startDate, Timestamp stopDate) {
             this.params = new Object[]{Utils.NNE(accNum), Utils.NNE(startDate), Utils.NNE(stopDate)};
             return this;
         }
@@ -298,6 +305,7 @@ public class AnalyticalDaoImpl implements AnalyticalDao {
 
     @Override
     public List<Extract> extracts(Jdbc jdbc, String accNum, Timestamp startDate, Timestamp stopDate) throws Exception {
-        return jdbc.executeQuery(new ExtractDataQuery().withParams(accNum, startDate, stopDate));
+        return jdbc.executeQuery(
+                new ExtractDataQuery().withParams(accNum, startDate, stopDate));
     }
 }
