@@ -1,18 +1,18 @@
 package ru.transfer;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
-import ru.transfer.model.ComplexOper;
-import ru.transfer.model.InputOperation;
-import ru.transfer.model.Operation;
-import ru.transfer.model.OutputOperation;
-import ru.transfer.service.OperationServiceImpl;
+import ru.transfer.expt.TransferAppException;
+import ru.transfer.helper.Jdbc;
+import ru.transfer.model.*;
 import ru.transfer.util.Utils;
 
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.groupingBy;
 
 
 /**
@@ -41,20 +41,20 @@ public class UtilsTest extends Assert {
         assertEquals(o, Utils.first(l));
     }
 
-    @Test
-    public void checkValueFrom() {
-        String s = "RUB";
-        Set set = new HashSet();
-        try {
-            Utils.valueFrom(s, set);
-        } catch (RuntimeException re) {
-            assertEquals("Object 'RUB' not found", re.getMessage());
-        }
-        set.add("USD");
-        set.add("EUR");
-        set.add("RUB");
-        assertEquals(Utils.valueFrom(s, set), s);
-    }
+//    @Test
+//    public void checkValueFrom() {
+//        String s = "RUB";
+//        Set set = new HashSet();
+//        try {
+//            Utils.valueFrom(s, set);
+//        } catch (RuntimeException re) {
+//            assertEquals("Object 'RUB' not found", re.getMessage());
+//        }
+//        set.add("USD");
+//        set.add("EUR");
+//        set.add("RUB");
+//        assertEquals(Utils.valueFrom(s, set), s);
+//    }
 
     private InputOperation io() {
         InputOperation o = new InputOperation();
@@ -79,18 +79,17 @@ public class UtilsTest extends Assert {
         return o;
     }
 
-    private static class Descriptor {
-        String accNum;
-        String curCode;
-        long operDate;
-        boolean needCheck;
+    private static class Descriptor implements Comparable<Descriptor> {
+        private String accNum;
+        private String curCode;
+        private long moment;
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Descriptor that = (Descriptor) o;
-            return operDate == that.operDate && accNum.equals(that.accNum) && curCode.equals(that.curCode);
+            return moment == that.moment && accNum.equals(that.accNum) && curCode.equals(that.curCode);
 
         }
 
@@ -98,13 +97,18 @@ public class UtilsTest extends Assert {
         public int hashCode() {
             int result = accNum.hashCode();
             result = 31 * result + curCode.hashCode();
-            result = 31 * result + (int) (operDate ^ (operDate >>> 32));
+            result = 31 * result + (int) (moment ^ (moment >>> 32));
             return result;
         }
 
         @Override
         public String toString() {
-            return accNum + " : " + curCode + " : " + operDate;
+            return accNum + " : " + curCode + " : " + new Date(moment);
+        }
+
+        @Override
+        public int compareTo(Descriptor o) {
+            return o.moment > this.moment ? -1 : o.moment == this.moment ? 0 : 1;
         }
     }
 
@@ -112,49 +116,66 @@ public class UtilsTest extends Assert {
         Descriptor d = new Descriptor();
         d.accNum = o.getAccount();
         d.curCode = o.getCurrency();
-        d.operDate = o.getOperDate().getTime();
+        d.moment = o.getOperDate().getTime();
         return d;
     }
 
-    private static class Workshop {
-
-        private String name;
-        private int attendance;
-
-        public Workshop(String name, int attendance) {
-            this.name = name;
-            this.attendance = attendance;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public int getAttendance() {
-            return attendance;
-        }
+    private String printOper(Operation o) {
+        return "Operation{" +
+                "operDate=" + o.getOperDate() +
+                ", currency='" + o.getCurrency() + '\'' +
+                ", account='" + o.getAccount() + '\'' +
+                ", amount=" + o.getAmount() +
+                '}';
     }
 
+    private Extract call(Jdbc jdbc, Operation o) {
+        Extract extract = new Extract();
+        extract.setOperDate(o.getOperDate());
+        extract.setAmount(BigDecimal.ONE);
+        extract.setAccNum(o.getAccount());
+        extract.setCurCode(o.getCurrency());
+        System.out.println("call : " + printOper(o));
+        return extract;
+    }
+
+    private BigDecimal saldo(Jdbc jdbc, String accNum, String curCode) {
+        System.out.println("saldo : " + accNum + " : " + curCode);
+        return BigDecimal.ONE;
+    }
+
+    @Ignore
     @Test
     public void checkIt() {
-        ComplexOper co = new ComplexOper();
-        co.getOperations().add(od(io(), "2006-01-01T10:00:01+0000"));
-        co.getOperations().add(od(oo(), "2006-01-01T10:00:01+0000"));
-        co.getOperations().add(od(io(), "2006-01-01T10:00:00+0000"));
-        co.getOperations().add(od(oo(), "2006-01-01T10:00:00+0000"));
-        co.getOperations().add(od(io(), "2006-01-01T10:00:03+0000"));
-        co.getOperations().add(od(oo(), "2006-01-01T10:00:04+0000"));
+        ComplexOper complexOper = new ComplexOper();
+        complexOper.getOperations().add(od(io(), "2006-01-01T10:00:01+0000"));
+        complexOper.getOperations().add(od(oo(), "2006-01-01T10:00:01+0000"));
+        complexOper.getOperations().add(od(io(), "2006-01-01T10:00:00+0000"));
+        complexOper.getOperations().add(od(oo(), "2006-01-01T10:00:00+0000"));
+        complexOper.getOperations().add(od(io(), "2006-01-01T10:00:03+0000"));
+        complexOper.getOperations().add(od(oo(), "2006-01-01T10:00:04+0000"));
 
-        co.getOperations().stream()
-                .flatMap((it) -> Stream.of(desc(it))).distinct().forEach(System.out::println);
+        Jdbc jdbc = new Jdbc();
+        List<Extract> extracts = new ArrayList<>();
 
-        Map<Descriptor, List<Operation>> m =
-                co.getOperations().stream().collect(Collectors.groupingBy( it -> desc(it) ));
+        complexOper.getOperations().stream().collect(
+                groupingBy(this::desc, TreeMap::new, Collectors.toList())).entrySet().stream()
+                .forEach( element -> {
+                    if (element.getValue().stream().map(operation -> {
+                        extracts.add(call(jdbc, operation));
+                        return operation instanceof CheckedOperation;
+                    }).reduce(false, (accumulator, value) -> accumulator || value)) {
+                        if (saldo(jdbc, element.getKey().accNum, element.getKey().curCode).compareTo(BigDecimal.ZERO) < 0) {
+                            throw new TransferAppException(
+                                    String.format("Insufficient funds in the account '%s' ('%s')"
+                                            , element.getKey().accNum
+                                            , element.getKey().curCode));
+                        }
+                    }
+                });
 
-        m.keySet().stream().sorted((Descriptor o1, Descriptor o2)->
-               ((o1.operDate > o2.operDate) ? 1 : (o1.operDate == o2.operDate) ? 0 : -1));
+        System.out.println(extracts.size());
 
-        System.out.println(m);
-       assert true;
+        assert true;
     }
 }

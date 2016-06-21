@@ -201,6 +201,13 @@
         </xs:sequence>
     </xs:complexType>
 
+    <xs:complexType name="checkedOperation">
+        <xs:complexContent>
+            <xs:extension base="trans:operation">
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
     <xs:complexType name="inputOperation">
         <xs:complexContent>
             <xs:extension base="trans:operation">
@@ -210,14 +217,14 @@
 
     <xs:complexType name="outputOperation">
         <xs:complexContent>
-            <xs:extension base="trans:operation">
+            <xs:extension base="trans:checkedOperation">
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
 
     <xs:complexType name="transferOperation">
         <xs:complexContent>
-            <xs:extension base="trans:operation">
+            <xs:extension base="trans:checkedOperation">
                 <xs:sequence>
                     <xs:element name="destAccount" type="xs:string"/>
                     <xs:element name="destCurrency" type="xs:string"/>

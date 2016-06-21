@@ -93,10 +93,12 @@ public class Utils {
         }
     }
 
+    /*
     public static <T> T valueFrom(T obj, Set<T> set) {
         return set.stream().filter(it -> it.equals(obj)).findAny()
                 .orElseThrow(() -> new RuntimeException(String.format("Object '%s' not found", obj)));
     }
+    */
 
     /*using in bindind.xjb*/
     public static String timestampToDateTime(Timestamp date) {
