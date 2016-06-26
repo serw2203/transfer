@@ -16,7 +16,7 @@ public class OperationBatchQueries implements BatchQueries {
     private final static int STEP = 366;
 
     private final static String INSERT_OPER =
-            "insert into aaa_oper (oper_id, h_client_id, oper_date, oper_type, oper_acc_id, oper_cur_code)\n" +
+            "insert into aaa_oper (oper_id, h_client_id, oper_date, oper_type, acc_id, cur_code)\n" +
                     "select seq_id.nextval as oper_id,\n" +
                     "       hc.h_client_id, '%s' as oper_date, '%s' as oper_type,\n" +
                     "                              a.acc_id as oper_acc_id, c.cur_code as oper_cur_code from aaa_account a\n" +
@@ -27,7 +27,7 @@ public class OperationBatchQueries implements BatchQueries {
     private final static String INSERT_INPUT_TURNS =
             "insert into aaa_turn (turn_id, oper_id, acc_id, cur_code, d_amount, k_amount, turn_date)\n" +
                     "select seq_id.nextval as turn_id, o.oper_id,\n" +
-                    "        o.oper_acc_id, o.oper_cur_code,\n" +
+                    "        o.acc_id, o.cur_code,\n" +
                     "        s.amount as d_amount,\n" +
                     "        0 as k_amount, o.oper_date from aaa_oper o\n" +
                     "join (select %s as amount) s on 1 = 1\n" +
@@ -36,7 +36,7 @@ public class OperationBatchQueries implements BatchQueries {
     private final static String INSERT_OUTPUT_TURNS =
             "insert into aaa_turn (turn_id, oper_id, acc_id, cur_code, d_amount, k_amount, turn_date)\n" +
                     "select seq_id.nextval as turn_id, o.oper_id,\n" +
-                    "        o.oper_acc_id as oper_acc_id, o.oper_cur_code,\n" +
+                    "        o.acc_id as oper_acc_id, o.cur_code,\n" +
                     "        0 as d_amount,\n" +
                     "        s.amount  as k_amount, o.oper_date from aaa_oper o\n" +
                     "join (select %s as amount) s on 1 = 1\n" +
