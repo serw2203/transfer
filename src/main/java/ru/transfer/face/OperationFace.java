@@ -8,10 +8,7 @@ import ru.transfer.service.OperationService;
 import ru.transfer.service.OperationServiceImpl;
 import ru.transfer.util.Utils;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -22,10 +19,10 @@ import javax.ws.rs.core.Response;
 public class OperationFace {
     private final OperationService operation = new OperationServiceImpl();
 
-    @GET
-    @Path("/add/{client}")
+    @POST
+    @Path("/addClient")
     @Produces({MediaType.APPLICATION_JSON})
-    public Response client(@PathParam("client") Client client) {
+    public Response addClient(Client client) {
         try {
             return Utils.ok(operation.addClient(client));
         } catch (Exception e) {
@@ -33,10 +30,10 @@ public class OperationFace {
         }
     }
 
-    @GET
-    @Path("/add/{account}")
+    @POST
+    @Path("/addAccount")
     @Produces({MediaType.APPLICATION_JSON})
-    public Response account(@PathParam("account") Account account) {
+    public Response addAccount(Account account) {
         try {
             return Utils.ok(operation.addAccount(account));
         } catch (Exception e) {
@@ -44,10 +41,10 @@ public class OperationFace {
         }
     }
 
-    @GET
-    @Path("/call/{operation}")
+    @POST
+    @Path("/addOperation")
     @Produces({MediaType.APPLICATION_JSON})
-    public Response call (@PathParam("operation") Operation oper) {
+    public Response addOperation (Operation oper) {
         try {
             return Utils.ok(operation.call(oper));
         } catch (Exception e) {
@@ -55,10 +52,10 @@ public class OperationFace {
         }
     }
 
-    @GET
-    @Path("/call/{complexOper}")
+    @POST
+    @Path("/addOperations")
     @Produces({MediaType.APPLICATION_JSON})
-    public Response call (@PathParam("complexOper") ComplexOper oper) {
+    public Response addOperations (ComplexOper oper) {
         try {
             return Utils.ok(operation.call(oper));
         } catch (Exception e) {

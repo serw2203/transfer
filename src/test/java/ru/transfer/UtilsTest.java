@@ -1,8 +1,7 @@
 package ru.transfer;
 
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 import ru.transfer.expt.TransferAppException;
 import ru.transfer.helper.Jdbc;
 import ru.transfer.model.*;
@@ -40,21 +39,6 @@ public class UtilsTest extends Assert {
         assertTrue(l.add(o));
         assertEquals(o, Utils.first(l));
     }
-
-//    @Test
-//    public void checkValueFrom() {
-//        String s = "RUB";
-//        Set set = new HashSet();
-//        try {
-//            Utils.valueFrom(s, set);
-//        } catch (RuntimeException re) {
-//            assertEquals("Object 'RUB' not found", re.getMessage());
-//        }
-//        set.add("USD");
-//        set.add("EUR");
-//        set.add("RUB");
-//        assertEquals(Utils.valueFrom(s, set), s);
-//    }
 
     private InputOperation io() {
         InputOperation o = new InputOperation();
@@ -144,7 +128,6 @@ public class UtilsTest extends Assert {
         return BigDecimal.ONE;
     }
 
-    @Ignore
     @Test
     public void checkIt() {
         ComplexOper complexOper = new ComplexOper();
@@ -173,8 +156,6 @@ public class UtilsTest extends Assert {
                         }
                     }
                 });
-
-        System.out.println(extracts.size());
 
         assert true;
     }

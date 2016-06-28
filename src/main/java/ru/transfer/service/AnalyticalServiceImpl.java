@@ -69,8 +69,8 @@ public class AnalyticalServiceImpl implements AnalyticalService {
         Jdbc jdbc = new Jdbc();
         jdbc.createTrans();
         try {
-            extracts.getInput().addAll(this.analyticalDao.balance(jdbc, accNum, startDate, false));
-            extracts.getOutput().addAll(this.analyticalDao.balance(jdbc, accNum, stopDate));
+            extracts.getInputs().addAll(this.analyticalDao.balance(jdbc, accNum, startDate, false));
+            extracts.getOutputs().addAll(this.analyticalDao.balance(jdbc, accNum, stopDate));
             extracts.getExtracts().addAll(this.analyticalDao.extracts(jdbc, accNum, startDate, stopDate));
             jdbc.commitTrans();
             return extracts;

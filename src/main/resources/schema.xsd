@@ -31,6 +31,8 @@
         </xs:sequence>
     </xs:complexType>
 
+    <xs:element name="client" type="trans:client"/>
+
     <xs:complexType name="client">
         <xs:sequence>
             <xs:element minOccurs="0" name="clientId" type="xs:long"/>
@@ -40,6 +42,8 @@
             <xs:element minOccurs="0" name="modifyDate" type="xs:dateTime"/>
         </xs:sequence>
     </xs:complexType>
+
+    <xs:element name="account" type="trans:account"/>
 
     <xs:complexType name="account">
         <xs:sequence>
@@ -186,6 +190,8 @@
         </xs:sequence>
     </xs:complexType>
 
+    <xs:element name="complexOper" type="trans:complexOper"/>
+
     <xs:complexType name="complexOper">
         <xs:sequence>
             <xs:element minOccurs="1" maxOccurs="unbounded" name="operations" type="trans:operation"/>
@@ -208,6 +214,8 @@
         </xs:complexContent>
     </xs:complexType>
 
+    <xs:element name="inputOperation" type="trans:inputOperation"/>
+
     <xs:complexType name="inputOperation">
         <xs:complexContent>
             <xs:extension base="trans:operation">
@@ -215,12 +223,16 @@
         </xs:complexContent>
     </xs:complexType>
 
+    <xs:element name="outputOperation" type="trans:outputOperation"/>
+
     <xs:complexType name="outputOperation">
         <xs:complexContent>
             <xs:extension base="trans:checkedOperation">
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
+
+    <xs:element name="transferOperation" type="trans:transferOperation"/>
 
     <xs:complexType name="transferOperation">
         <xs:complexContent>

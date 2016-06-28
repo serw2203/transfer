@@ -1,12 +1,13 @@
 package ru.transfer;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 import ru.transfer.helper.Jdbc;
+import ru.transfer.init.ClientAccountBatchQueries;
 import ru.transfer.init.CrossRateBatchQueries;
 import ru.transfer.init.DdlBatchQueries;
+import ru.transfer.init.OperationBatchQueries;
 import ru.transfer.model.*;
 import ru.transfer.query.CommonQuery;
 import ru.transfer.query.DataQuery;
@@ -38,8 +39,8 @@ public class AppTest extends Assert {
         try {
             jdbc.executeBatch(new DdlBatchQueries());
             jdbc.executeBatch(new CrossRateBatchQueries());
-//            jdbc.executeBatch(new ClientAccountBatchQueries());
-//            jdbc.executeBatch(new OperationBatchQueries(10));
+            jdbc.executeBatch(new ClientAccountBatchQueries());
+            jdbc.executeBatch(new OperationBatchQueries(1));
 
             OperationService operation = new OperationServiceImpl();
 
@@ -111,7 +112,6 @@ public class AppTest extends Assert {
         }
     }
 
-    @Ignore
     @Test
     public void checkCurrencyRate() {
         try {
@@ -188,8 +188,8 @@ public class AppTest extends Assert {
             assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(BigDecimal.ONE), 0);
             ExtractRoot extract = analytical.extracts("ACC00001", iDate, oDate);
             assertEquals(extract.getExtracts().size(), 2);
-            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ONE), 0);
+            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
 
             iDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000");
             oDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:01+0000");
@@ -199,8 +199,8 @@ public class AppTest extends Assert {
             operation.call(complexOper);
             assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(new BigDecimal("2")), 0);
             extract = analytical.extracts("ACC00001", iDate, oDate);
-            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(new BigDecimal("2")), 0);
+            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(new BigDecimal("2")), 0);
 
             Timestamp tDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000");
             complexOper.getOperations().clear();
@@ -215,12 +215,12 @@ public class AppTest extends Assert {
             operation.call(complexOper);
             assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(BigDecimal.ONE), 0);
             extract = analytical.extracts("ACC00001", iDate, oDate);
-            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ONE), 0);
+            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
             assertEquals(analytical.saldo("ACC00002", "RUB").compareTo(BigDecimal.ONE), 0);
             extract = analytical.extracts("ACC00002", iDate, oDate);
-            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ONE), 0);
+            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
 
 
             tDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:02+0000");
@@ -230,17 +230,17 @@ public class AppTest extends Assert {
             assertEquals(analytical.saldo("ACC00002", "RUB").compareTo(new BigDecimal("2")), 0);
 
             extract = analytical.extracts("ACC00001", iDate, oDate);
-            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ONE), 0);
+            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
             extract = analytical.extracts("ACC00001", iDate, tDate);
-            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
             extract = analytical.extracts("ACC00002", iDate, oDate);
-            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(BigDecimal.ONE), 0);
+            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
             extract = analytical.extracts("ACC00002", iDate, tDate);
-            assertEquals( balanceFrom(extract.getInput(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals( balanceFrom(extract.getOutput(), "RUB").compareTo(new BigDecimal("2")), 0);
+            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(new BigDecimal("2")), 0);
 
         } catch (Exception e) {
             e.printStackTrace();

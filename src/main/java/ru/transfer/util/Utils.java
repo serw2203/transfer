@@ -17,7 +17,6 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +26,6 @@ import java.util.stream.Collectors;
 public class Utils {
     private final static Logger log = LoggerFactory.getLogger(Utils.class);
 
-    //todo : make private
     public static String arrayToString(Object[] array) {
         if (array != null) {
             final Writer result = new StringWriter();

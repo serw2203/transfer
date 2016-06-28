@@ -19,10 +19,7 @@ import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  *
@@ -30,6 +27,10 @@ import java.util.TimeZone;
 @SuppressWarnings("unchecked")
 public class Config {
     private final static String SFMT = "yyyy-MM-dd'T'HH:mm:ssZ";
+
+    static {
+        TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
+    }
 
     private static class TimestampParamConverter implements ParamConverter<Timestamp> {
         @Override
@@ -63,10 +64,7 @@ public class Config {
         return new SimpleDateFormat(SFMT);
     }
 
-    public static void config (JAXRSServerFactoryBean serverFactory) {
-        TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
-        serverFactory.setAddress("http://0.0.0.0:9000/");
-        serverFactory.setServiceBeans(Arrays.asList(new AnalyticalFace(), new OperationFace()));
+    public static List<Object> providers (){
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonSerialize.Inclusion.NON_EMPTY);
         mapper.configure(SerializationConfig.Feature.WRITE_NULL_MAP_VALUES, false);
@@ -77,10 +75,13 @@ public class Config {
         mapper.setDeserializationConfig(deserializationConfig.withDateFormat(Config.dateFmt()));
         JacksonJsonProvider provider = new JacksonJsonProvider();
         provider.setMapper(mapper);
-        serverFactory.setProviders(Arrays.asList(provider, new ParamConverterProviderImpl()));
-        Map maps = new HashMap();
-        maps.put("json", "application/json");
-        serverFactory.setExtensionMappings(maps);
+        return Collections.singletonList( Arrays.asList(provider, new ParamConverterProviderImpl()));
+    }
+
+    public static void config (JAXRSServerFactoryBean serverFactory) {
+        serverFactory.setAddress("http://0.0.0.0:9000/");
+        serverFactory.setServiceBeans( Collections.singletonList( Arrays.asList(new AnalyticalFace(), new OperationFace()) ));
+        serverFactory.setProviders(providers());
     }
 
     public static void init (Server server) {
