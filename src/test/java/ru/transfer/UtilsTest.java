@@ -1,12 +1,20 @@
 package ru.transfer;
 
+import org.codehaus.jackson.Version;
+import org.codehaus.jackson.map.DeserializationConfig;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+import org.codehaus.jackson.map.module.SimpleModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import ru.transfer.conf.Config;
 import ru.transfer.expt.TransferAppException;
 import ru.transfer.helper.Jdbc;
 import ru.transfer.model.*;
 import ru.transfer.util.Utils;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,25 +48,27 @@ public class UtilsTest extends Assert {
         assertEquals(o, Utils.first(l));
     }
 
-    private InputOperation io() {
+    private <O extends Operation> O io() {
         InputOperation o = new InputOperation();
+        o.setOperType(OperTypeEnum.INPUT);
         o.setAccount("A1");
         o.setCurrency("RUB");
         o.setOperDate(Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000"));
         o.setAmount(BigDecimal.ONE);
-        return o;
+        return (O) o;
     }
 
-    private OutputOperation oo() {
+    private <O extends Operation> O oo() {
         OutputOperation o = new OutputOperation();
+        o.setOperType(OperTypeEnum.OUTPUT);
         o.setAccount("A1");
         o.setCurrency("RUB");
         o.setOperDate(Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000"));
         o.setAmount(BigDecimal.ONE);
-        return o;
+        return (O) o;
     }
 
-    private Operation od(Operation o, String d) {
+    private  <O extends Operation> O od( O o, String d) {
         o.setOperDate(Utils.dateTimeToTimestamp(d));
         return o;
     }
@@ -128,7 +138,7 @@ public class UtilsTest extends Assert {
         return BigDecimal.ONE;
     }
 
-    @Test
+    @Test(enabled = false)
     public void checkIt() {
         ComplexOper complexOper = new ComplexOper();
         complexOper.getOperations().add(od(io(), "2006-01-01T10:00:01+0000"));
@@ -143,7 +153,7 @@ public class UtilsTest extends Assert {
 
         complexOper.getOperations().stream().collect(
                 groupingBy(this::desc, TreeMap::new, Collectors.toList())).entrySet().stream()
-                .forEach( element -> {
+                .forEach(element -> {
                     if (element.getValue().stream().map(operation -> {
                         extracts.add(call(jdbc, operation));
                         return operation instanceof CheckedOperation;
@@ -158,5 +168,45 @@ public class UtilsTest extends Assert {
                 });
 
         assert true;
+    }
+
+    @Test(enabled = false)
+    public void checkJson () {
+        ObjectMapper mapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule("scheme4", Version.unknownVersion());
+        module.addDeserializer(Operation.class, new Config.Scheme4Desirializer());
+        mapper.registerModule(module);
+        mapper.setSerializationInclusion(JsonSerialize.Inclusion.NON_EMPTY);
+        mapper.configure(SerializationConfig.Feature.WRITE_NULL_MAP_VALUES, false);
+        mapper.configure(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
+        SerializationConfig serializationConfig = mapper.getSerializationConfig();
+        mapper.setSerializationConfig(serializationConfig.withDateFormat(Config.dateFmt()));
+        DeserializationConfig deserializationConfig = mapper.getDeserializationConfig();
+        mapper.setDeserializationConfig(deserializationConfig.withDateFormat(Config.dateFmt()));
+
+        ComplexOper co = new ComplexOper();
+        co.getOperations().add(io());
+        co.getOperations().add(oo());
+
+        TransferOperation to = new TransferOperation();
+        to.setOperType(OperTypeEnum.TRANSFER);
+        to.setAccount("A1");
+        to.setCurrency("RUB");
+        to.setOperDate(Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000"));
+        to.setAmount(BigDecimal.ONE);
+        to.setDestAccount("A2");
+        to.setDestCurrency("USD");
+
+        co.getOperations().add(to);
+
+        try {
+            String jsonInString = mapper.writeValueAsString(co);
+            System.out.println(jsonInString);
+
+            ComplexOper obj = mapper.readValue(jsonInString, ComplexOper.class);
+            System.out.println(obj);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -198,8 +198,17 @@
         </xs:sequence>
     </xs:complexType>
 
+    <xs:simpleType name="operTypeEnum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="INPUT"/>
+            <xs:enumeration value="OUTPUT"/>
+            <xs:enumeration value="TRANSFER"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:complexType name="operation">
         <xs:sequence>
+            <xs:element name="operType" type="trans:operTypeEnum"/>
             <xs:element name="operDate" type="xs:dateTime"/>
             <xs:element name="currency" type="xs:string"/>
             <xs:element name="account" type="xs:string"/>

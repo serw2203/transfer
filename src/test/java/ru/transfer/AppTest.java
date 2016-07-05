@@ -1,94 +1,34 @@
 package ru.transfer;
 
+import org.apache.cxf.endpoint.Server;
+import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
+import org.apache.cxf.jaxrs.client.WebClient;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
+import ru.transfer.conf.Config;
 import ru.transfer.helper.Jdbc;
-import ru.transfer.init.ClientAccountBatchQueries;
 import ru.transfer.init.CrossRateBatchQueries;
-import ru.transfer.init.DdlBatchQueries;
-import ru.transfer.init.OperationBatchQueries;
 import ru.transfer.model.*;
 import ru.transfer.query.CommonQuery;
 import ru.transfer.query.DataQuery;
-import ru.transfer.service.AnalyticalService;
-import ru.transfer.service.AnalyticalServiceImpl;
-import ru.transfer.service.OperationService;
-import ru.transfer.service.OperationServiceImpl;
 import ru.transfer.util.Utils;
 
+import javax.ws.rs.core.MediaType;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TimeZone;
 
 /**
  *
  */
 public class AppTest extends Assert {
 
-    private final AnalyticalService analytical = new AnalyticalServiceImpl();
-
-    private final OperationService operation = new OperationServiceImpl();
-
-    @BeforeClass
-    public static void init() {
-        TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
-        Jdbc jdbc = new Jdbc();
-        try {
-            jdbc.executeBatch(new DdlBatchQueries());
-            jdbc.executeBatch(new CrossRateBatchQueries());
-            jdbc.executeBatch(new ClientAccountBatchQueries());
-            jdbc.executeBatch(new OperationBatchQueries(1));
-
-            OperationService operation = new OperationServiceImpl();
-
-            Client client = new Client();
-            client.setLastName("Lastname1");
-            client.setFirstName("Firstname1");
-            client.setModifyDate(Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000"));
-            operation.addClient(client);
-
-            Account account = new Account();
-            account.setAccNum("ACC00001");
-            account.setClientId(client.getClientId());
-            operation.addAccount(account);
-
-            client = new Client();
-            client.setLastName("Lastname2");
-            client.setFirstName("Firstname2");
-            client.setModifyDate(Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000"));
-            client = operation.addClient(client);
-
-            account = new Account();
-            account.setAccNum("ACC00002");
-            account.setClientId(client.getClientId());
-            operation.addAccount(account);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private static class CurrencyPair {
-        private String sCurCode;
-        private String tCurCode;
-
-        String getsCurCode() {
-            return sCurCode;
-        }
-
-        void setsCurCode(String sCurCode) {
-            this.sCurCode = sCurCode;
-        }
-
-        String gettCurCode() {
-            return tCurCode;
-        }
-
-        void settCurCode(String tCurCode) {
-            this.tCurCode = tCurCode;
-        }
+        String firstCode;
+        String secondCode;
     }
 
     private static class CurrencyPairDataQuery implements DataQuery<CurrencyPair> {
@@ -97,8 +37,8 @@ public class AppTest extends Assert {
             List<CurrencyPair> result = new ArrayList<>();
             while (resultSet.next()) {
                 CurrencyPair pair = new CurrencyPair();
-                pair.setsCurCode(resultSet.getString("SCUR_CODE"));
-                pair.settCurCode(resultSet.getString("TCUR_CODE"));
+                pair.firstCode = resultSet.getString("SCUR_CODE");
+                pair.secondCode = resultSet.getString("TCUR_CODE");
                 result.add(pair);
             }
             return result;
@@ -112,139 +52,210 @@ public class AppTest extends Assert {
         }
     }
 
-    @Test
-    public void checkCurrencyRate() {
-        try {
-            CurrencyPairDataQuery query = new CurrencyPairDataQuery();
-            List<CurrencyPair> pairs = new Jdbc().executeQuery(query);
-            AnalyticalService service = new AnalyticalServiceImpl();
-            for (CurrencyPair pair : pairs) {
-                Rate rate = service.rate(pair.getsCurCode(), pair.gettCurCode(), new Timestamp(System.currentTimeMillis()));
-                assertNotNull(rate);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            assert false;
-        }
+    private static <T> T httpGet(String path, Class<T> clazz, Object... pathParams) {
+        return WebClient.create("http://0.0.0.0:9000/analytical/", Config.providers())
+                .header("content-type", "application/json; charset=utf-8")
+                .path(path, pathParams)
+                .accept(MediaType.APPLICATION_JSON_TYPE).get(clazz);
+    }
+
+    private static <T> T httpPost(String path, Class<T> clazz, Object body) {
+        return WebClient.create("http://0.0.0.0:9000/operation/", Config.providers())
+                .header("content-type", "application/json; charset=utf-8")
+                .path(path)
+                .accept(MediaType.APPLICATION_JSON_TYPE).post(body, clazz);
     }
 
     private BigDecimal balanceFrom(List<Balance> list, String curr) {
-        for (Balance balance : list) {
-            if (curr.equals(balance.getCurCode())) {
-                return balance.getBalance();
-            }
-        }
-        throw new RuntimeException(String.format("%s - not found", curr));
+        return list.stream().filter((Balance it) -> curr.equals(it.getCurCode())).findFirst()
+                .orElseThrow(() -> new RuntimeException(String.format("%s - not found", curr))).getBalance();
     }
 
-    @Test
+    private Server server;
+
+    @BeforeSuite
+    public void init() {
+        JAXRSServerFactoryBean serverFactory = new JAXRSServerFactoryBean();
+        Config.config(serverFactory);
+        server = serverFactory.create();
+        Config.init(server);
+    }
+
+    @AfterSuite
+    private void destroy() {
+        server.destroy();
+    }
+
+    @Test(groups = {"main"})
+    public void checkCurrency() {
+        try {
+            CurrencyRoot currencyRoot = httpGet("currency", CurrencyRoot.class);
+            assertNotNull(currencyRoot);
+            assertEquals(5, currencyRoot.getCurrencies().size());
+        } catch (Exception e) {
+            e.printStackTrace();
+            assert false;
+        }
+    }
+
+    @Test(groups = {"main"}, dependsOnMethods = {"checkCurrency"})
+    public void initRate() {
+        try {
+            new Jdbc().executeBatch(new CrossRateBatchQueries());
+            assert true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            assert false;
+        }
+    }
+
+    @Test(groups = {"main"}, dependsOnMethods = {"checkCurrency", "initRate"})
+    public void checkCurrencyRate() {
+        try {
+            final String current = Utils.timestampToDateTime(System.currentTimeMillis());
+            new Jdbc().executeQuery(new CurrencyPairDataQuery()).stream()
+                    .forEach(pair -> {
+                        assertNotNull(
+                                httpGet("rate/{scur}/{tcur}/{date}", Rate.class,
+                                        pair.firstCode, pair.secondCode, current));
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+            assert false;
+        }
+    }
+
+    @Test(groups = {"main"}, dependsOnMethods = {"checkCurrency", "initRate", "checkCurrencyRate"})
     public void checkAccountClient() {
-        try {
-            Account account = analytical.account("ACC00001");
-            assertNotNull(account);
-            assertNotNull(account.getAccId());
-            assertNotNull(account.getAccNum());
-            assertEquals(account.getAccNum(), "ACC00001");
-            assertNotNull(analytical.accounts(account.getClientId()));
+        Client client = new Client();
+        client.setLastName("CLI00001");
+        client.setModifyDate(Utils.dateTimeToTimestamp("2006-01-01T06:00:00+0000"));
+        client = httpPost("addClient", Client.class, client);
+        assertNotNull(client.getClientId());
 
-            Client client = analytical.client(account.getClientId());
-            assertNotNull(client);
-            assertNotNull(client.getClientId());
-            assertNotNull(client.getLastName());
+        Account account = new Account();
+        account.setClientId(client.getClientId());
+        account.setAccNum("ACC00001");
+        Account r_account = httpPost("addAccount", Account.class, account);
+        assertNotNull(r_account.getAccId());
 
-            Account account2 = analytical.account("ACC00002");
-            assertNotNull(account2);
-            assertNotNull(account2.getAccId());
-            assertNotNull(account2.getAccNum());
-            assertEquals(account2.getAccNum(), "ACC00002");
-            assertNotNull(analytical.accounts(account2.getClientId()));
+        Account g_account = httpGet("account/{acc_num}", Account.class, "ACC00001");
+        assertNotNull(g_account);
+        assertNotNull(g_account.getAccId());
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            assert false;
-        }
+        Account account2 = new Account();
+        account2.setClientId(client.getClientId());
+        account2.setAccNum("ACC00002");
+        Account r_account2 = httpPost("addAccount", Account.class, account2);
+        assertNotNull(r_account2.getAccId());
+
+        Account g_account2 = httpGet("account/{acc_num}", Account.class, "ACC00002");
+        assertNotNull(g_account2);
+        assertNotNull(g_account2.getAccId());
     }
 
-    @Test
-    public void checkIO() {
-        try {
-            Timestamp iDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000");
-            Timestamp oDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000");
+    @Test(groups = {"main"}, dependsOnMethods = {"checkCurrency", "initRate", "checkCurrencyRate", "checkCurrencyRate", "checkAccountClient"})
+    public void checkOpers() {
+        String inputDateStr = "2006-01-01T10:00:00+0000";
+        String outputDateStr = "2006-01-01T10:00:00+0000";
+        Timestamp inputDate = Utils.dateTimeToTimestamp(inputDateStr);
+        Timestamp outputDate = Utils.dateTimeToTimestamp(outputDateStr);
 
-            ComplexOper complexOper = new ComplexOper();
-            OutputOperation output = new OutputOperation();
-            output.setAccount("ACC00001");
-            output.setAmount(new BigDecimal("99.00"));
-            output.setCurrency("RUB");
-            output.setOperDate(oDate);
-            complexOper.getOperations().add(output);
-            InputOperation input = new InputOperation();
-            input.setAmount(new BigDecimal("100.00"));
-            input.setAccount("ACC00001");
-            input.setCurrency("RUB");
-            input.setOperDate(iDate);
-            complexOper.getOperations().add(input);
-            operation.call(complexOper);
-            assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(BigDecimal.ONE), 0);
-            ExtractRoot extract = analytical.extracts("ACC00001", iDate, oDate);
-            assertEquals(extract.getExtracts().size(), 2);
-            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
+        ComplexOper complexOper = new ComplexOper();
+        OutputOperation output = new OutputOperation();
+        output.setOperType(OperTypeEnum.OUTPUT);
+        output.setAccount("ACC00001");
+        output.setAmount(new BigDecimal("99.00"));
+        output.setCurrency("RUB");
+        output.setOperDate(outputDate);
+        complexOper.getOperations().add(output);
+        InputOperation input = new InputOperation();
+        input.setOperType(OperTypeEnum.INPUT);
+        input.setAmount(new BigDecimal("100.00"));
+        input.setAccount("ACC00001");
+        input.setCurrency("RUB");
+        input.setOperDate(inputDate);
+        complexOper.getOperations().add(input);
 
-            iDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000");
-            oDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:01+0000");
-            input.setOperDate(iDate);
-            output.setOperDate(oDate);
+        assertEquals(2, httpPost("addOperations", Extracts.class, complexOper)
+                .getExtracts().size());
 
-            operation.call(complexOper);
-            assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(new BigDecimal("2")), 0);
-            extract = analytical.extracts("ACC00001", iDate, oDate);
-            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(new BigDecimal("2")), 0);
+        ExtractRoot er = httpGet("/extracts/{acc_num}/{start_date}/{stop_date}", ExtractRoot.class,
+                "ACC00001", inputDateStr, outputDateStr);
 
-            Timestamp tDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:00+0000");
-            complexOper.getOperations().clear();
-            TransferOperation transfer = new TransferOperation();
-            transfer.setAccount("ACC00001");
-            transfer.setCurrency("RUB");
-            transfer.setOperDate(tDate);
-            transfer.setAmount(BigDecimal.ONE);
-            transfer.setDestAccount("ACC00002");
-            transfer.setDestCurrency("RUB");
-            complexOper.getOperations().add(transfer);
-            operation.call(complexOper);
-            assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(BigDecimal.ONE), 0);
-            extract = analytical.extracts("ACC00001", iDate, oDate);
-            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
-            assertEquals(analytical.saldo("ACC00002", "RUB").compareTo(BigDecimal.ONE), 0);
-            extract = analytical.extracts("ACC00002", iDate, oDate);
-            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
+        assertEquals(balanceFrom(er.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+        assertEquals(balanceFrom(er.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
+
+        inputDateStr = "2006-01-01T10:00:00+0000";
+        outputDateStr = "2006-01-01T10:00:01+0000";
+        inputDate = Utils.dateTimeToTimestamp(inputDateStr);
+        outputDate = Utils.dateTimeToTimestamp(outputDateStr);
+        input.setOperDate(inputDate);
+        output.setOperDate(outputDate);
+
+        assertEquals(2, httpPost("addOperations", Extracts.class, complexOper)
+                .getExtracts().size());
+
+        ExtractRoot er1 = httpGet("/extracts/{acc_num}/{start_date}/{stop_date}", ExtractRoot.class,
+                "ACC00001", inputDateStr, outputDateStr);
+        assertEquals(balanceFrom(er1.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+        assertEquals(balanceFrom(er1.getOutputs(), "RUB").compareTo(new BigDecimal("2")), 0);
+
+        String transferDateStr = "2006-01-01T10:00:00+0000";
+        Timestamp transferDate = Utils.dateTimeToTimestamp(transferDateStr);
+        complexOper.getOperations().clear();
+
+        TransferOperation transfer = new TransferOperation();
+        transfer.setOperType(OperTypeEnum.TRANSFER);
+        transfer.setAccount("ACC00001");
+        transfer.setCurrency("RUB");
+        transfer.setOperDate(transferDate);
+        transfer.setAmount(BigDecimal.ONE);
+        transfer.setDestAccount("ACC00002");
+        transfer.setDestCurrency("RUB");
+        complexOper.getOperations().add(transfer);
+
+        assertEquals(1, httpPost("addOperations", Extracts.class, complexOper)
+                .getExtracts().size());
+
+        ExtractRoot er2 = httpGet("/extracts/{acc_num}/{start_date}/{stop_date}", ExtractRoot.class,
+                "ACC00001", inputDateStr, outputDateStr);
+
+        assertEquals(balanceFrom(er2.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+        assertEquals(balanceFrom(er2.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
+
+        ExtractRoot er3 = httpGet("/extracts/{acc_num}/{start_date}/{stop_date}", ExtractRoot.class,
+                "ACC00002", inputDateStr, outputDateStr);
+        assertEquals(balanceFrom(er3.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+        assertEquals(balanceFrom(er3.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
 
 
-            tDate = Utils.dateTimeToTimestamp("2006-01-01T10:00:02+0000");
-            transfer.setOperDate(tDate);
-            operation.call(complexOper);
-            assertEquals(analytical.saldo("ACC00001", "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(analytical.saldo("ACC00002", "RUB").compareTo(new BigDecimal("2")), 0);
+        transferDateStr = "2006-01-01T10:00:02+0000";
+        transferDate = Utils.dateTimeToTimestamp(transferDateStr);
+        transfer.setOperDate(transferDate);
 
-            extract = analytical.extracts("ACC00001", iDate, oDate);
-            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
-            extract = analytical.extracts("ACC00001", iDate, tDate);
-            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            extract = analytical.extracts("ACC00002", iDate, oDate);
-            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
-            extract = analytical.extracts("ACC00002", iDate, tDate);
-            assertEquals(balanceFrom(extract.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
-            assertEquals(balanceFrom(extract.getOutputs(), "RUB").compareTo(new BigDecimal("2")), 0);
+        assertEquals(1, httpPost("addOperations", Extracts.class, complexOper)
+                .getExtracts().size());
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            assert false;
-        }
+        ExtractRoot er4 = httpGet("/extracts/{acc_num}/{start_date}/{stop_date}", ExtractRoot.class,
+                "ACC00001", inputDateStr, outputDateStr);
+        assertEquals(balanceFrom(er4.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+        assertEquals(balanceFrom(er4.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
+
+
+        ExtractRoot er5 = httpGet("/extracts/{acc_num}/{start_date}/{stop_date}", ExtractRoot.class,
+                "ACC00001", inputDateStr, transferDateStr);
+        assertEquals(balanceFrom(er5.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+        assertEquals(balanceFrom(er5.getOutputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+
+        ExtractRoot er6 = httpGet("/extracts/{acc_num}/{start_date}/{stop_date}", ExtractRoot.class,
+                "ACC00002", inputDateStr, outputDateStr);
+        assertEquals(balanceFrom(er6.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+        assertEquals(balanceFrom(er6.getOutputs(), "RUB").compareTo(BigDecimal.ONE), 0);
+
+        ExtractRoot er7 = httpGet("/extracts/{acc_num}/{start_date}/{stop_date}", ExtractRoot.class,
+                "ACC00002", inputDateStr, transferDateStr);
+        assertEquals(balanceFrom(er7.getInputs(), "RUB").compareTo(BigDecimal.ZERO), 0);
+        assertEquals(balanceFrom(er7.getOutputs(), "RUB").compareTo(new BigDecimal("2")), 0);
     }
 }

@@ -103,6 +103,10 @@ public class Utils {
         return Config.dateFmt().format(date);
     }
 
+    public static String timestampToDateTime(long date) {
+        return Config.dateFmt().format(date);
+    }
+
     public static Response ok(Object obj) {
         return Response.status(200).header("content-type", "application/json; charset=utf-8")
                 .entity(obj).build();

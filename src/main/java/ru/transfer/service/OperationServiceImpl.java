@@ -36,7 +36,6 @@ public class OperationServiceImpl implements OperationService {
         String accNum;
         String curCode;
         long moment;
-        //boolean needCheck;
 
         @Override
         public int compareTo(Descriptor o) {
@@ -115,58 +114,4 @@ public class OperationServiceImpl implements OperationService {
             throw e;
         }
     }
-
-    /** Выполнение группы операций без функционального программирования
-     *
-    public Extracts call2(ComplexOper complexOper) throws Exception {
-        Extracts result = new Extracts();
-        Jdbc jdbc = new Jdbc();
-        jdbc.createTrans();
-        try {
-            //prepare
-            Map<Descriptor, List<Operation>> map = smartOrder(complexOper);
-            for (Map.Entry<Descriptor, List<Operation>> item : map.entrySet()) {
-                //call
-                for (Operation operation : item.getValue()) {
-                    result.getExtracts().add(operationDao.call(jdbc, operation));
-                }
-                //check current saldo
-                Descriptor descriptor = item.getKey();
-                if (descriptor.needCheck) {
-                    if (analyticalDao.saldo(jdbc, descriptor.accNum, descriptor.curCode).compareTo(BigDecimal.ZERO) < 0) {
-                        throw new TransferAppException(
-                                String.format("Insufficient funds in the account '%s'", descriptor.accNum));
-                    }
-                }
-            }
-            jdbc.commitTrans();
-            return result;
-        } catch (Exception e) {
-            jdbc.rollbackTrans();
-            throw e;
-        }
-    }
-
-    private Map<Descriptor, List<Operation>> smartOrder(ComplexOper complexOper) {
-        Map<Descriptor, List<Operation>> map = new TreeMap<>((Descriptor o1, Descriptor o2) ->
-                ((o1.moment > o2.moment) ? 1 : (o1.moment == o2.moment) ? 0 : -1));
-
-        complexOper.getOperations().forEach(operation -> {
-            Descriptor descriptor = descriptor(operation);
-            List<Operation> list;
-
-            if (map.containsKey(descriptor)) {
-                Descriptor key = Utils.valueFrom(descriptor, map.keySet());
-                key.needCheck = descriptor.needCheck || key.needCheck;
-                list = map.get(descriptor);
-            } else {
-                list = new ArrayList<>();
-            }
-
-            list.add(operation);
-            map.put(descriptor, list);
-        });
-        return map;
-    }
-    */
 }
