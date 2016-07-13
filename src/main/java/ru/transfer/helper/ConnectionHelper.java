@@ -15,7 +15,7 @@ public class ConnectionHelper {
         try {
             cpds = new ComboPooledDataSource();
             cpds.setDriverClass("org.h2.Driver");
-            cpds.setJdbcUrl("jdbc:h2:mem:transfer;DB_CLOSE_DELAY=-1;LOCK_MODE=3");
+            cpds.setJdbcUrl("jdbc:h2:mem:transfer;DB_CLOSE_DELAY=-1;LOCK_MODE=3;LOCK_TIMEOUT=60000");
             cpds.setMinPoolSize(10);
             cpds.setAcquireIncrement(2);
             cpds.setMaxPoolSize(100);

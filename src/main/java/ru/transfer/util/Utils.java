@@ -17,6 +17,7 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -33,8 +34,7 @@ public class Utils {
             printWriter.write("{");
             printWriter.write(
                     Arrays.stream(array)
-                            .map(it -> it == null ? "null" : it.toString())
-                            .collect(Collectors.joining(", ")));
+                            .map(it -> Objects.toString(it) ).collect(Collectors.joining(", ")));
             printWriter.write("}");
             return result.toString();
         } else
@@ -71,6 +71,9 @@ public class Utils {
                     String.format("Invalid result : found %d elements", collection.size()));
     }
 
+    /**
+     * instead of Objects.requireNonNull(T obj) and Objects.requireNonNull(T obj, String message)
+     */
     public static <T> T NNE(Object obj, String message) {
         if (obj != null && isFilled(obj)) {
             return (T) obj;

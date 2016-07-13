@@ -11,7 +11,7 @@ import java.sql.Statement;
 public class DdlBatchQueries implements BatchQueries {
 
     private final static String[] DDL_QUERIES = new String[]{
-            "create sequence seq_id start with 1;",
+            "create sequence seq_id start with 10000000;",
 
             "create table aaa_client ( " +
                     "client_id bigint primary key);",
