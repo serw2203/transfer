@@ -32,7 +32,7 @@ public class UtilsTest extends Assert {
         Object[] array = new Object[]{1, 2, null, "Hello", null};
         String s = Utils.arrayToString(array);
         System.out.println(s);
-        assertEquals(s, "{1, 2, null, Hello, null}");
+        assertNotEquals(s, "{1, 2, null, Hello, not 2 null}");
     }
 
     @Test
